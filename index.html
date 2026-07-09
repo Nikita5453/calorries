@@ -735,11 +735,28 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
+      width: 100%;
       margin-top: 12px;
       padding: 12px 14px;
       border-top: 1px solid #ececef;
+      border-right: 0;
+      border-bottom: 0;
+      border-left: 0;
+      background: transparent;
       color: #17181b;
+      font: inherit;
       font-weight: 900;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .recommendation-chevron {
+      display: inline-block;
+      transition: transform .18s ease;
+    }
+
+    .ai-recommend.collapsed .recommendation-chevron {
+      transform: rotate(180deg);
     }
 
     .ai-badge {
@@ -2274,6 +2291,7 @@
     let selectedPhotoDataUrl = "";
     let cameraStream = null;
     let activeMealIndex = null;
+    let recommendationsExpanded = true;
     let refineMode = "meal";
     let editingProfileStep = false;
 
@@ -3332,14 +3350,14 @@
             <div class="useful-title"><span>💖 Полезность</span><strong>${useful}/10 🥑</strong></div>
             <div class="useful-track"><span style="width: ${useful * 10}%"></span></div>
           </div>
-          <div class="ai-recommend"><span><span class="ai-badge">AI ✨</span>Рекомендации</span><span>⌄</span></div>
-          <div class="recommend-card">${escapeHtml(mealRecommendation(meal))}</div>
+          <button class="ai-recommend${recommendationsExpanded ? "" : " collapsed"}" type="button" aria-expanded="${recommendationsExpanded}"><span><span class="ai-badge">AI ✨</span>Рекомендации</span><span class="recommendation-chevron">⌄</span></button>
+          <div class="recommend-card${recommendationsExpanded ? "" : " hidden"}">${escapeHtml(mealRecommendation(meal))}</div>
         </section>
         <h3 class="ingredients-title">Ингредиенты<span class="ingredients-count">${ingredients.length}</span></h3>
         <div class="ingredients-list">
-          ${ingredients.map((ingredient) => `
+          ${ingredients.map((ingredient, ingredientIndex) => `
             <div class="ingredient-row">
-              <button class="ingredient-remove" type="button" aria-label="Удалить ингредиент">×</button>
+              <button class="ingredient-remove" type="button" data-ingredient-index="${ingredientIndex}" aria-label="Удалить ингредиент ${escapeHtml(ingredient.name)}">×</button>
               <span>${escapeHtml(ingredient.name)}</span>
               <span class="ingredient-kcal">${ingredient.calories || meal.calories} ккал</span>
             </div>
@@ -3351,6 +3369,7 @@
 
     function openMealDetail(index) {
       activeMealIndex = index;
+      recommendationsExpanded = true;
       renderMealDetail();
       mealDetail.classList.add("open");
     }
@@ -3478,7 +3497,16 @@
           fat: Number(analysis.fat) || 0,
           carbs: Number(analysis.carbs) || 0
         },
-        ingredients: [{ name: foodName, calories }],
+        ingredients: [{
+          name: foodName,
+          grams,
+          calories,
+          macros: {
+            protein: Number(analysis.protein) || 0,
+            fat: Number(analysis.fat) || 0,
+            carbs: Number(analysis.carbs) || 0
+          }
+        }],
         dateKey: selectedDateKey,
         createdAt: oldMeal.createdAt || getCurrentTime()
       };
@@ -3807,6 +3835,23 @@
     closeMealDetail.addEventListener("click", closeMealDetailView);
 
     mealDetailBody.addEventListener("click", (event) => {
+      const recommendationButton = event.target.closest(".ai-recommend");
+      if (recommendationButton) {
+        const recommendationCard = recommendationButton.nextElementSibling;
+        const isExpanded = recommendationButton.getAttribute("aria-expanded") === "true";
+        recommendationsExpanded = !isExpanded;
+        recommendationButton.setAttribute("aria-expanded", String(!isExpanded));
+        recommendationButton.classList.toggle("collapsed", isExpanded);
+        recommendationCard?.classList.toggle("hidden", isExpanded);
+        return;
+      }
+
+      const removeIngredientButton = event.target.closest("[data-ingredient-index]");
+      if (removeIngredientButton) {
+        removeIngredientFromMeal(Number(removeIngredientButton.dataset.ingredientIndex));
+        return;
+      }
+
       if (event.target.closest(".detail-icon-button")) {
         openRefineSheet("meal");
       }
@@ -3854,7 +3899,12 @@
       const ingredientMacros = ingredient.macros || estimateMacros(Number(ingredient.calories) || 0);
       const oldIngredients = meal.ingredients?.length
         ? meal.ingredients
-        : [{ name: meal.foodName, calories: meal.calories }];
+        : [{
+            name: meal.foodName,
+            grams: Number(meal.grams) || 0,
+            calories: Number(meal.calories) || 0,
+            macros: { ...mealMacros }
+          }];
       const totalGrams = Math.max(0, Number(meal.grams) || 0) + ingredient.grams;
       dayMeals[activeMealIndex] = {
         ...meal,
@@ -3867,6 +3917,66 @@
           carbs: Math.round(((Number(mealMacros.carbs) || 0) + ingredientMacros.carbs) * 10) / 10
         },
         ingredients: [...oldIngredients, ingredient]
+      };
+      setMealsForDate(selectedDateKey, dayMeals);
+      saveState();
+      renderState();
+      renderMealDetail();
+    }
+
+    function removeIngredientFromMeal(ingredientIndex) {
+      const dayMeals = [...getMealsForDate()];
+      const meal = dayMeals[activeMealIndex];
+      if (!meal) {
+        return;
+      }
+      const mealMacros = meal.macros || estimateMacros(Number(meal.calories) || 0);
+      const ingredients = meal.ingredients?.length
+        ? [...meal.ingredients]
+        : [{
+            name: meal.foodName,
+            grams: Number(meal.grams) || 0,
+            calories: Number(meal.calories) || 0,
+            macros: { ...mealMacros }
+          }];
+      if (!Number.isInteger(ingredientIndex) || ingredientIndex < 0 || ingredientIndex >= ingredients.length) {
+        return;
+      }
+      if (ingredients.length === 1) {
+        dayMeals.splice(activeMealIndex, 1);
+        setMealsForDate(selectedDateKey, dayMeals);
+        saveState();
+        renderState();
+        closeMealDetailView();
+        return;
+      }
+
+      const removedIngredient = ingredients[ingredientIndex];
+      const mealCalories = Math.max(0, Number(meal.calories) || 0);
+      const removedCalories = Math.min(mealCalories, Math.max(0, Number(removedIngredient.calories) || 0));
+      const calorieRatio = mealCalories > 0 ? removedCalories / mealCalories : 1 / ingredients.length;
+      const removedMacros = removedIngredient.macros || {
+        protein: (Number(mealMacros.protein) || 0) * calorieRatio,
+        fat: (Number(mealMacros.fat) || 0) * calorieRatio,
+        carbs: (Number(mealMacros.carbs) || 0) * calorieRatio
+      };
+      const mealGrams = Math.max(0, Number(meal.grams) || 0);
+      const savedIngredientGrams = Number(removedIngredient.grams);
+      const removedGrams = savedIngredientGrams > 0 ? savedIngredientGrams : mealGrams * calorieRatio;
+      ingredients.splice(ingredientIndex, 1);
+
+      const remainingGrams = Math.max(0, mealGrams - removedGrams);
+      dayMeals[activeMealIndex] = {
+        ...meal,
+        calories: Math.max(0, Math.round(mealCalories - removedCalories)),
+        grams: Math.round(remainingGrams * 10) / 10,
+        portionLabel: `${Math.round(remainingGrams)}г`,
+        macros: {
+          protein: Math.max(0, Math.round(((Number(mealMacros.protein) || 0) - (Number(removedMacros.protein) || 0)) * 10) / 10),
+          fat: Math.max(0, Math.round(((Number(mealMacros.fat) || 0) - (Number(removedMacros.fat) || 0)) * 10) / 10),
+          carbs: Math.max(0, Math.round(((Number(mealMacros.carbs) || 0) - (Number(removedMacros.carbs) || 0)) * 10) / 10)
+        },
+        ingredients
       };
       setMealsForDate(selectedDateKey, dayMeals);
       saveState();
