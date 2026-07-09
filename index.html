@@ -808,31 +808,39 @@
 
     .detail-actions {
       position: fixed;
-      left: 50%;
+      right: max(8px, calc((100vw - 420px) / 2 + 8px));
       bottom: 32px;
       z-index: 1210;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0;
-      width: min(calc(100vw - 12px), 410px);
-      transform: translateX(-50%);
+      display: flex;
+      justify-content: flex-end;
+      pointer-events: none;
     }
 
     .detail-actions button {
-      height: 46px;
+      height: 42px;
       border: 0;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+      pointer-events: auto;
+    }
+
+    .add-ingredient-button {
+      width: 100%;
+      height: 46px;
+      margin-top: 10px;
+      border: 0;
+      border-radius: 14px;
+      background: #e1e1e1;
+      color: #111318;
       font-size: 16px;
       font-weight: 900;
       cursor: pointer;
     }
 
-    .add-ingredient-button {
-      border-radius: 999px 0 0 999px;
-      background: #e1e1e1;
-      color: #111318;
-    }
-
     .refine-ai-button {
+      min-width: 132px;
+      padding: 0 14px;
       border-radius: 999px;
       background: var(--green);
       color: #fff;
@@ -1836,7 +1844,6 @@
     </div>
     <div id="mealDetailBody"></div>
     <div class="detail-actions">
-      <button class="add-ingredient-button" id="addIngredient" type="button">＋ Ингредиент</button>
       <button class="refine-ai-button" id="openRefineAi" type="button">✦ Уточнить с ИИ</button>
     </div>
   </section>
@@ -1893,7 +1900,6 @@
     const mealDetailDate = document.querySelector("#mealDetailDate");
     const mealDetailBody = document.querySelector("#mealDetailBody");
     const closeMealDetail = document.querySelector("#closeMealDetail");
-    const addIngredient = document.querySelector("#addIngredient");
     const openRefineAi = document.querySelector("#openRefineAi");
     const refineSheet = document.querySelector("#refineSheet");
     const refinePrompt = document.querySelector("#refinePrompt");
@@ -3033,6 +3039,7 @@
             </div>
           `).join("")}
         </div>
+        <button class="add-ingredient-button" id="addIngredient" type="button">＋ Ингредиент</button>
       `;
     }
 
@@ -3496,6 +3503,9 @@
       if (event.target.closest(".detail-icon-button")) {
         openRefineSheet("meal");
       }
+      if (event.target.closest("#addIngredient")) {
+        openRefineSheet("ingredient");
+      }
     });
 
     function openRefineSheet(mode = "meal") {
@@ -3512,8 +3522,6 @@
     }
 
     openRefineAi.addEventListener("click", () => openRefineSheet("meal"));
-
-    addIngredient.addEventListener("click", () => openRefineSheet("ingredient"));
 
     closeRefine.addEventListener("click", () => {
       refineSheet.classList.remove("open");
