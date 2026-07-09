@@ -787,6 +787,19 @@
       margin-top: 8px;
     }
 
+    .plan-advice {
+      margin: 0;
+      padding-left: 18px;
+      text-align: left;
+      color: #4b515c;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .plan-advice li + li {
+      margin-top: 5px;
+    }
+
     .loading-ring {
       width: 180px;
       height: 180px;
@@ -1009,6 +1022,7 @@
     };
     const stepKeys = ["goal", "gender", "birth", "height", "weight", "targetWeight", "activity", "speed", "motivation", "diet", "proof", "loading", "summary"];
     let profileDraft = { ...profileDefaults };
+    let generatedPlan = null;
     let activeStep = 0;
     let target = 2188;
     let eaten = Number(localStorage.getItem("caloryx_eaten") || 0);
@@ -1036,11 +1050,24 @@
     }
 
     function applyProfile(profile) {
-      const plan = calculatePlan(profile);
+      const plan = profile.plan || calculatePlan(profile);
       target = plan.calories;
       macroTargets.protein = plan.protein;
       macroTargets.fat = plan.fat;
       macroTargets.carbs = plan.carbs;
+    }
+
+    async function createPersonalPlan(profile) {
+      const response = await fetch(`${API_BASE}/api/create-plan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profile })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || "ИИ не смог создать план");
+      }
+      return payload;
     }
 
     function choiceButton(value, icon, title, subtitle = "") {
@@ -1213,16 +1240,24 @@
           <div class="loading-ring" id="loadingRing"><span id="loadingPercent">0%</span></div>
           <p class="onboard-subtitle">Считаем нутриенты, учитывая вашу диету</p>
         `;
-        animateLoading();
+        runPlanGeneration();
       } else if (step === "summary") {
-        const plan = calculatePlan(profileDraft);
+        const plan = generatedPlan || calculatePlan(profileDraft);
         const diff = Math.abs(profileDraft.weight - profileDraft.targetWeight);
+        const goalLabel = plan.goal_label || (profileDraft.goal === "gain" ? "Вы наберете" : profileDraft.goal === "maintain" ? "Вы сохраните" : "Вы скинете");
+        const targetDate = plan.target_date || "16.12.2026";
+        const advice = Array.isArray(plan.daily_advice) ? plan.daily_advice : [
+          "Держите регулярные приемы пищи.",
+          "Добавляйте белок в каждый основной прием.",
+          "Пейте воду и отслеживайте прогресс без резких ограничений."
+        ];
         onboardBody.innerHTML = `
           <h1 class="onboard-title">Поздравляем! Ваш план готов</h1>
           <div class="summary-card">
             <div class="cube">🚶</div>
-            <div>Вы ${profileDraft.goal === "gain" ? "наберете" : profileDraft.goal === "maintain" ? "сохраните" : "скинете"}</div>
-            <div class="big">${diff} кг → 16.12.2026</div>
+            <div>${goalLabel}</div>
+            <div class="big">${diff} кг → ${targetDate}</div>
+            <p>${plan.summary || "ИИ подобрал реалистичный дневной режим под вашу цель и активность."}</p>
             <strong>Рекомендации на день</strong>
             <div class="calories">🔥 ${plan.calories}</div>
             <div class="plan-grid">
@@ -1230,6 +1265,9 @@
               <div class="plan-tile">Жиры<strong>${plan.fat}г</strong></div>
               <div class="plan-tile">Углеводы<strong>${plan.carbs}г</strong></div>
             </div>
+            <ul class="plan-advice">
+              ${advice.map((item) => `<li>${item}</li>`).join("")}
+            </ul>
           </div>
         `;
       }
@@ -1306,8 +1344,48 @@
       }, 60);
     }
 
+    async function runPlanGeneration() {
+      let value = 0;
+      const ringNode = document.querySelector("#loadingRing");
+      const percentNode = document.querySelector("#loadingPercent");
+      const timer = setInterval(() => {
+        value = Math.min(value + 4, 92);
+        if (ringNode) {
+          ringNode.style.setProperty("--loading", `${value * 3.6}deg`);
+        }
+        if (percentNode) {
+          percentNode.textContent = `${value}%`;
+        }
+      }, 90);
+
+      try {
+        generatedPlan = await createPersonalPlan(profileDraft);
+      } catch (error) {
+        generatedPlan = calculatePlan(profileDraft);
+        generatedPlan.summary = "ИИ сейчас недоступен, поэтому применен безопасный расчет по анкете.";
+        generatedPlan.daily_advice = [
+          "Следуйте дневной норме калорий без жестких ограничений.",
+          "Добавляйте белок и овощи в основные приемы пищи.",
+          "Корректируйте план по самочувствию и динамике веса."
+        ];
+      } finally {
+        clearInterval(timer);
+        if (ringNode) {
+          ringNode.style.setProperty("--loading", "360deg");
+        }
+        if (percentNode) {
+          percentNode.textContent = "100%";
+        }
+        setTimeout(() => {
+          activeStep += 1;
+          renderOnboarding();
+        }, 250);
+      }
+    }
+
     function showOnboarding(reset = false) {
       profileDraft = reset ? { ...(getProfile() || profileDefaults) } : { ...profileDefaults };
+      generatedPlan = null;
       activeStep = 0;
       appRoot.classList.add("hidden");
       sheet.classList.remove("open");
@@ -1326,6 +1404,7 @@
     }
 
     function completeOnboarding() {
+      profileDraft.plan = generatedPlan || calculatePlan(profileDraft);
       localStorage.setItem("caloryx_profile", JSON.stringify(profileDraft));
       applyProfile(profileDraft);
       showApp();
