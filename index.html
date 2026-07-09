@@ -401,6 +401,7 @@
       min-height: 132px;
       font-size: 13px;
       color: #555a64;
+      cursor: pointer;
     }
 
     .history-item b {
@@ -516,6 +517,330 @@
       min-height: 48px;
       grid-template-columns: 1fr auto;
       padding: 11px 12px;
+      cursor: default;
+    }
+
+    .meal-detail {
+      position: fixed;
+      inset: 0;
+      z-index: 1200;
+      display: flex;
+      flex-direction: column;
+      width: min(100vw, 420px);
+      margin: 0 auto;
+      padding: 10px 6px 86px;
+      overflow-y: auto;
+      background: #f2f2f3;
+      transform: translateX(110%);
+      transition: transform .22s ease;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .meal-detail.open {
+      transform: translateX(0);
+    }
+
+    .meal-detail-top {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 34px;
+      position: relative;
+    }
+
+    .meal-detail-date {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: #fff;
+      color: #858c98;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .meal-detail-date::after {
+      content: "";
+      width: 0;
+      height: 0;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-left: 6px solid #101217;
+    }
+
+    .meal-detail-close {
+      position: absolute;
+      left: 4px;
+      top: 0;
+      width: 38px;
+      height: 38px;
+      border: 0;
+      background: transparent;
+      font-size: 28px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .meal-detail-title {
+      margin: 22px 8px 8px;
+      color: #050608;
+      font-size: 28px;
+      line-height: 1.05;
+      font-weight: 900;
+    }
+
+    .meal-control-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 34px;
+      gap: 6px;
+      align-items: center;
+      padding: 6px;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .portion-control {
+      display: grid;
+      grid-template-columns: 28px 1fr 28px;
+      align-items: center;
+      gap: 6px;
+      padding: 4px;
+      border-radius: 9px;
+      background: #f5f5f6;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .portion-control button,
+    .detail-icon-button {
+      border: 0;
+      border-radius: 8px;
+      background: #fff;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .portion-control button {
+      height: 28px;
+    }
+
+    .detail-weight {
+      color: #6e7480;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .detail-weight strong {
+      display: block;
+      color: #1b1d22;
+      font-size: 14px;
+    }
+
+    .detail-icon-button {
+      height: 38px;
+      background: #eef0f3;
+    }
+
+    .meal-nutrition-card,
+    .recommend-card,
+    .ingredient-row {
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .meal-nutrition-card {
+      margin-top: 12px;
+      padding: 14px;
+    }
+
+    .nutrition-heading {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: #6f7580;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .nutrition-big {
+      margin: 8px 0 12px;
+      color: #050608;
+      font-size: 42px;
+      line-height: 1;
+      font-weight: 800;
+    }
+
+    .detail-macro-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .detail-macro {
+      padding: 10px;
+      border-radius: 10px;
+      background: #fafafa;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .detail-macro strong {
+      display: block;
+      margin-top: 5px;
+      color: #050608;
+      font-size: 20px;
+    }
+
+    .detail-useful {
+      margin-top: 12px;
+      padding: 11px;
+      border-radius: 10px;
+      background: #f7f7f8;
+    }
+
+    .useful-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .useful-title strong {
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--green);
+      color: #fff;
+    }
+
+    .useful-track {
+      height: 8px;
+      margin-top: 9px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #fff;
+    }
+
+    .useful-track span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #ff7d34 0%, #f5d51b 40%, var(--green) 100%);
+    }
+
+    .ai-recommend {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-top: 1px solid #ececef;
+      color: #17181b;
+      font-weight: 900;
+    }
+
+    .ai-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-right: 6px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: #7b22ff;
+      color: #fff;
+      font-size: 12px;
+    }
+
+    .recommend-card {
+      margin-top: 8px;
+      padding: 12px;
+      color: #4e5561;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .ingredients-title {
+      margin: 18px 0 8px;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .ingredients-count {
+      display: inline-grid;
+      place-items: center;
+      min-width: 24px;
+      height: 18px;
+      margin-left: 5px;
+      border-radius: 999px;
+      background: var(--green);
+      color: #fff;
+      font-size: 12px;
+    }
+
+    .ingredient-row {
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 14px;
+      font-weight: 800;
+    }
+
+    .ingredient-remove {
+      width: 26px;
+      height: 26px;
+      border: 0;
+      border-radius: 50%;
+      background: #fff;
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .ingredient-kcal {
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #fff;
+      font-size: 12px;
+    }
+
+    .detail-actions {
+      position: fixed;
+      left: 50%;
+      bottom: 32px;
+      z-index: 1210;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      width: min(calc(100vw - 12px), 410px);
+      transform: translateX(-50%);
+    }
+
+    .detail-actions button {
+      height: 46px;
+      border: 0;
+      font-size: 16px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .add-ingredient-button {
+      border-radius: 999px 0 0 999px;
+      background: #e1e1e1;
+      color: #111318;
+    }
+
+    .refine-ai-button {
+      border-radius: 999px;
+      background: var(--green);
+      color: #fff;
+      box-shadow: 0 8px 18px rgba(142, 205, 31, .34);
+    }
+
+    .refine-sheet {
+      z-index: 1300;
     }
 
     .history-kcal,
@@ -1504,6 +1829,31 @@
     </div>
   </section>
 
+  <section class="meal-detail" id="mealDetail" aria-label="Детали блюда">
+    <div class="meal-detail-top">
+      <button class="meal-detail-close" id="closeMealDetail" type="button">‹</button>
+      <span class="meal-detail-date" id="mealDetailDate">09 июл. 21:30</span>
+    </div>
+    <div id="mealDetailBody"></div>
+    <div class="detail-actions">
+      <button class="add-ingredient-button" id="addIngredient" type="button">＋ Ингредиент</button>
+      <button class="refine-ai-button" id="openRefineAi" type="button">✦ Уточнить с ИИ</button>
+    </div>
+  </section>
+
+  <section class="sheet refine-sheet" id="refineSheet" aria-label="Уточнить с ИИ">
+    <h2>Уточнить с ИИ</h2>
+    <label class="field">
+      <textarea id="refinePrompt" autocomplete="off" placeholder="Опишите ваш приём пищи"></textarea>
+    </label>
+    <div class="ai-hint"><strong>!</strong><span>Уточните, что добавить, удалить или изменить — ИИ проанализирует блюдо заново.<br><br>Учтите: все предыдущие ручные изменения будут отменены и заменены новыми результатами.</span></div>
+    <div class="ai-error" id="refineError"></div>
+    <div class="sheet-actions">
+      <button class="ghost" id="closeRefine" type="button">Отмена</button>
+      <button class="send" id="sendRefine" type="button" disabled>Уточнить</button>
+    </div>
+  </section>
+
   <section class="camera-overlay hidden" id="cameraOverlay" aria-label="Камера">
     <div class="camera-box">
       <video class="camera-preview" id="cameraPreview" autoplay playsinline muted></video>
@@ -1539,6 +1889,17 @@
     const profileSheet = document.querySelector("#profileSheet");
     const profileStats = document.querySelector("#profileStats");
     const closeProfile = document.querySelector("#closeProfile");
+    const mealDetail = document.querySelector("#mealDetail");
+    const mealDetailDate = document.querySelector("#mealDetailDate");
+    const mealDetailBody = document.querySelector("#mealDetailBody");
+    const closeMealDetail = document.querySelector("#closeMealDetail");
+    const addIngredient = document.querySelector("#addIngredient");
+    const openRefineAi = document.querySelector("#openRefineAi");
+    const refineSheet = document.querySelector("#refineSheet");
+    const refinePrompt = document.querySelector("#refinePrompt");
+    const refineError = document.querySelector("#refineError");
+    const closeRefine = document.querySelector("#closeRefine");
+    const sendRefine = document.querySelector("#sendRefine");
     const resetPlan = document.querySelector("#resetPlan");
     const resetConfirm = document.querySelector("#resetConfirm");
     const confirmUserName = document.querySelector("#confirmUserName");
@@ -1610,6 +1971,8 @@
     let calendarExpanded = false;
     let selectedPhotoDataUrl = "";
     let cameraStream = null;
+    let activeMealIndex = null;
+    let refineMode = "meal";
     let editingProfileStep = false;
 
     function toDateKey(date = new Date()) {
@@ -2491,6 +2854,33 @@
       return date.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
     }
 
+    function formatMealDateTime(meal) {
+      const date = fromDateKey(selectedDateKey);
+      const day = date.toLocaleDateString("ru-RU", { day: "2-digit", month: "short" }).replace(".", "");
+      return `${day}. ${meal.createdAt || ""}`.trim();
+    }
+
+    function mealRecommendation(meal) {
+      if (meal.recommendation) {
+        return meal.recommendation;
+      }
+      const macros = meal.macros || estimateMacros(Number(meal.calories) || 0);
+      const tips = [];
+      if ((macros.protein || 0) < 15) {
+        tips.push("добавьте источник белка");
+      }
+      if ((macros.carbs || 0) > 70) {
+        tips.push("углеводов много, лучше сочетать с овощами");
+      }
+      if ((meal.usefulness || 0) >= 8) {
+        return "Хороший выбор для дневника. Порция выглядит сбалансированной, можно оставить без изменений.";
+      }
+      if (tips.length) {
+        return `ИИ рекомендует: ${tips.join(", ")}. Так блюдо будет полезнее и ровнее по БЖУ.`;
+      }
+      return "ИИ рекомендует уточнить способ приготовления и точный вес, чтобы расчёт калорий и БЖУ был точнее.";
+    }
+
     function getMacroTotals(meals = getMealsForDate()) {
       return meals.reduce((totals, meal) => {
         const macros = meal.macros || estimateMacros(Number(meal.calories) || 0);
@@ -2594,6 +2984,70 @@
       `;
     }
 
+    function renderMealDetail() {
+      const meal = getMealsForDate()[activeMealIndex];
+      if (!meal) {
+        mealDetail.classList.remove("open");
+        activeMealIndex = null;
+        return;
+      }
+      const macros = meal.macros || estimateMacros(Number(meal.calories) || 0);
+      const useful = Math.max(0, Math.min(10, Number(meal.usefulness) || 0));
+      const ingredients = meal.ingredients?.length
+        ? meal.ingredients
+        : [{ name: meal.foodName, calories: meal.calories }];
+      mealDetailDate.textContent = formatMealDateTime(meal);
+      mealDetailBody.innerHTML = `
+        <h2 class="meal-detail-title">${meal.foodName}</h2>
+        <div class="meal-control-row">
+          <div class="portion-control">
+            <button type="button" aria-label="Уменьшить порцию">-</button>
+            <span>1 порция</span>
+            <button type="button" aria-label="Увеличить порцию">+</button>
+          </div>
+          <div class="detail-weight">Общий вес<strong>${meal.grams || 100}г</strong></div>
+          <button class="detail-icon-button" type="button" aria-label="Редактировать">✎</button>
+        </div>
+        <section class="meal-nutrition-card">
+          <div class="nutrition-heading"><span class="meal-flame">🔥</span> Калории</div>
+          <div class="nutrition-big">${meal.calories}</div>
+          <div class="detail-macro-grid">
+            <div class="detail-macro">Белки <span class="macro-pill protein">Б</span><strong>${macros.protein || 0}</strong></div>
+            <div class="detail-macro">Жиры <span class="macro-pill fat">Ж</span><strong>${macros.fat || 0}</strong></div>
+            <div class="detail-macro">Углеводы <span class="macro-pill carbs">У</span><strong>${macros.carbs || 0}</strong></div>
+          </div>
+          <div class="detail-useful">
+            <div class="useful-title"><span>💖 Полезность</span><strong>${useful}/10 🥑</strong></div>
+            <div class="useful-track"><span style="width: ${useful * 10}%"></span></div>
+          </div>
+          <div class="ai-recommend"><span><span class="ai-badge">AI ✨</span>Рекомендации</span><span>⌄</span></div>
+          <div class="recommend-card">${mealRecommendation(meal)}</div>
+        </section>
+        <h3 class="ingredients-title">Ингредиенты<span class="ingredients-count">${ingredients.length}</span></h3>
+        <div class="ingredients-list">
+          ${ingredients.map((ingredient) => `
+            <div class="ingredient-row">
+              <button class="ingredient-remove" type="button" aria-label="Удалить ингредиент">×</button>
+              <span>${ingredient.name}</span>
+              <span class="ingredient-kcal">${ingredient.calories || meal.calories} ккал</span>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function openMealDetail(index) {
+      activeMealIndex = index;
+      renderMealDetail();
+      mealDetail.classList.add("open");
+    }
+
+    function closeMealDetailView() {
+      mealDetail.classList.remove("open");
+      refineSheet.classList.remove("open");
+      activeMealIndex = null;
+    }
+
     function renderState() {
       const meals = getMealsForDate();
       const eaten = getEatenForDate();
@@ -2613,7 +3067,7 @@
           const macros = meal.macros || estimateMacros(Number(meal.calories) || 0);
           const portion = meal.portionLabel || `${meal.grams || 100}г`;
           return `
-          <article class="history-item">
+          <article class="history-item" data-meal-index="${index}" role="button" tabindex="0">
             <div class="meal-thumb">${mealIconSvg()}</div>
             <div class="history-main">
               <div class="meal-top">
@@ -2694,23 +3148,30 @@
       });
     }
 
-    function addMealFromAnalysis(analysis, fallbackName) {
+    function buildMealFromAnalysis(analysis, fallbackName, oldMeal = {}) {
       const calories = Number(analysis.calories) || 1;
       const grams = Number(analysis.grams) || 100;
-      const meal = {
+      const foodName = analysis.food_name || fallbackName;
+      return {
         foodName: analysis.food_name || fallbackName,
         portionLabel: analysis.portion_label || `${grams}г`,
         grams,
         calories,
         usefulness: Number(analysis.usefulness) || 0,
+        recommendation: analysis.recommendation || "",
         macros: {
           protein: Number(analysis.protein) || 0,
           fat: Number(analysis.fat) || 0,
           carbs: Number(analysis.carbs) || 0
         },
+        ingredients: [{ name: foodName, calories }],
         dateKey: selectedDateKey,
-        createdAt: getCurrentTime()
+        createdAt: oldMeal.createdAt || getCurrentTime()
       };
+    }
+
+    function addMealFromAnalysis(analysis, fallbackName) {
+      const meal = buildMealFromAnalysis(analysis, fallbackName);
       const dayMeals = [...getMealsForDate()];
       dayMeals.unshift(meal);
       setMealsForDate(selectedDateKey, dayMeals);
@@ -2999,19 +3460,96 @@
 
     history.addEventListener("click", (event) => {
       const button = event.target.closest(".delete-meal");
-      if (!button) {
+      if (button) {
+        const index = Number(button.dataset.index);
+        const dayMeals = [...getMealsForDate()];
+        const meal = dayMeals[index];
+        if (!meal) {
+          return;
+        }
+        dayMeals.splice(index, 1);
+        setMealsForDate(selectedDateKey, dayMeals);
+        saveState();
+        renderState();
         return;
       }
-      const index = Number(button.dataset.index);
-      const dayMeals = [...getMealsForDate()];
-      const meal = dayMeals[index];
+      const item = event.target.closest("[data-meal-index]");
+      if (item) {
+        openMealDetail(Number(item.dataset.mealIndex));
+      }
+    });
+
+    history.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+      const item = event.target.closest("[data-meal-index]");
+      if (item) {
+        event.preventDefault();
+        openMealDetail(Number(item.dataset.mealIndex));
+      }
+    });
+
+    closeMealDetail.addEventListener("click", closeMealDetailView);
+
+    mealDetailBody.addEventListener("click", (event) => {
+      if (event.target.closest(".detail-icon-button")) {
+        openRefineSheet("meal");
+      }
+    });
+
+    function openRefineSheet(mode = "meal") {
+      const meal = getMealsForDate()[activeMealIndex];
       if (!meal) {
         return;
       }
-      dayMeals.splice(index, 1);
-      setMealsForDate(selectedDateKey, dayMeals);
-      saveState();
-      renderState();
+      refineMode = mode;
+      refinePrompt.value = mode === "ingredient" ? "Добавь ингредиент: " : "";
+      refineError.textContent = "";
+      sendRefine.disabled = true;
+      refineSheet.classList.add("open");
+      refinePrompt.focus();
+    }
+
+    openRefineAi.addEventListener("click", () => openRefineSheet("meal"));
+
+    addIngredient.addEventListener("click", () => openRefineSheet("ingredient"));
+
+    closeRefine.addEventListener("click", () => {
+      refineSheet.classList.remove("open");
+    });
+
+    refinePrompt.addEventListener("input", () => {
+      sendRefine.disabled = refinePrompt.value.trim().length < 3;
+    });
+
+    sendRefine.addEventListener("click", async () => {
+      const meal = getMealsForDate()[activeMealIndex];
+      const note = refinePrompt.value.trim();
+      if (!meal || note.length < 3) {
+        return;
+      }
+      refineError.textContent = "";
+      sendRefine.disabled = true;
+      sendRefine.textContent = "ИИ уточняет...";
+      try {
+        const prompt = refineMode === "ingredient"
+          ? `${meal.foodName}, ${meal.grams || 100} г. ${note}`
+          : `${meal.foodName}, ${meal.grams || 100} г. Уточнение: ${note}`;
+        const analysis = await analyzeFoodDescription(prompt);
+        const dayMeals = [...getMealsForDate()];
+        dayMeals[activeMealIndex] = buildMealFromAnalysis(analysis, meal.foodName, meal);
+        setMealsForDate(selectedDateKey, dayMeals);
+        saveState();
+        renderState();
+        renderMealDetail();
+        refineSheet.classList.remove("open");
+      } catch (error) {
+        refineError.textContent = error.message;
+      } finally {
+        sendRefine.disabled = refinePrompt.value.trim().length < 3;
+        sendRefine.textContent = "Уточнить";
+      }
     });
 
     calendarToggle.addEventListener("click", () => {
