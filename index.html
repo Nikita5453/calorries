@@ -1041,11 +1041,33 @@
       const bmr = 10 * profile.weight + 6.25 * profile.height - 5 * getAge(profile) + genderOffset;
       const goalDelta = profile.goal === "gain" ? 300 : profile.goal === "maintain" ? 0 : -400;
       const calories = Math.max(1200, Math.round(bmr * profile.activity + goalDelta));
+      const macros = calculateDietMacros(calories, profile.diet);
       return {
         calories,
-        protein: Math.round((calories * 0.29) / 4),
-        fat: Math.round((calories * 0.28) / 9),
-        carbs: Math.round((calories * 0.43) / 4)
+        protein: macros.protein,
+        fat: macros.fat,
+        carbs: macros.carbs
+      };
+    }
+
+    function calculateDietMacros(calories, diet) {
+      const splits = {
+        none: [0.29, 0.28, 0.43],
+        vegetarian: [0.25, 0.27, 0.48],
+        vegan: [0.23, 0.25, 0.52],
+        paleo: [0.30, 0.35, 0.35]
+      };
+      if (diet === "keto") {
+        const protein = Math.round((calories * 0.30) / 4);
+        const carbs = Math.min(50, Math.round((calories * 0.08) / 4));
+        const fat = Math.round(Math.max(calories - protein * 4 - carbs * 4, calories * 0.55) / 9);
+        return { protein, fat, carbs };
+      }
+      const [proteinSplit, fatSplit, carbsSplit] = splits[diet] || splits.none;
+      return {
+        protein: Math.round((calories * proteinSplit) / 4),
+        fat: Math.round((calories * fatSplit) / 9),
+        carbs: Math.round((calories * carbsSplit) / 4)
       };
     }
 
@@ -1089,7 +1111,14 @@
       const start = Number(profileDraft.weight);
       const end = Number(profileDraft.targetWeight);
       const diff = Math.abs(end - start);
-      const weeklyRate = profileDraft.goal === "maintain" ? 0 : Math.max(0.1, Number(profileDraft.speed) || 0.4);
+      const dietModifier = {
+        none: 1,
+        vegetarian: profileDraft.goal === "gain" ? 0.92 : 0.97,
+        vegan: profileDraft.goal === "gain" ? 0.88 : 0.95,
+        keto: profileDraft.goal === "maintain" ? 1 : 0.90,
+        paleo: profileDraft.goal === "maintain" ? 1 : 1.02
+      }[profileDraft.diet] || 1;
+      const weeklyRate = profileDraft.goal === "maintain" ? 0 : Math.max(0.1, (Number(profileDraft.speed) || 0.4) * dietModifier);
       const weeks = profileDraft.goal === "maintain" ? 12 : Math.max(4, Math.ceil(diff / weeklyRate));
       return [0, 0.25, 0.5, 0.75, 1].map((ratio) => {
         const eased = profileDraft.goal === "loss"
