@@ -460,17 +460,21 @@
 
     .sheet {
       position: fixed;
-      inset: 0 0 auto;
+      inset: 0;
       min-height: 100vh;
+      max-height: 100vh;
       background: #fff;
       border-radius: 0;
-      padding: 22px 16px 18px;
+      padding: 22px 16px calc(22px + env(safe-area-inset-bottom));
       box-shadow: 0 -18px 50px rgba(0, 0, 0, .18);
       transform: translateY(110%);
       transition: transform .24s ease;
       max-width: 420px;
       margin: 0 auto;
       z-index: 999;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
     }
 
     .sheet::before {
@@ -560,6 +564,14 @@
       border-radius: 12px;
       background: #f2f3f6;
       padding: 16px;
+      border: 0;
+      text-align: left;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .goal-card:active {
+      background: #eceef2;
     }
 
     .goal-card span {
@@ -604,6 +616,19 @@
       border-top: 1px solid #e5e5e7;
       color: #5f6570;
       font-size: 15px;
+      cursor: pointer;
+    }
+
+    .profile-row:active {
+      background: #f2f3f6;
+    }
+
+    .profile-row.info {
+      cursor: default;
+    }
+
+    .profile-row.info:active {
+      background: transparent;
     }
 
     .profile-row:first-child {
@@ -621,6 +646,10 @@
       color: #a5a9b1;
       font-size: 24px;
       line-height: 1;
+    }
+
+    .profile-row.info .chevron {
+      visibility: hidden;
     }
 
     .danger-zone {
@@ -745,7 +774,7 @@
 
     .scan-row {
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: 1fr 1fr;
       gap: 10px;
       align-items: center;
       margin: 10px 0;
@@ -757,6 +786,16 @@
       border-radius: 12px;
       background: #2f9cff;
       color: #fff;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .gallery-button {
+      height: 44px;
+      border: 0;
+      border-radius: 12px;
+      background: #eef1f5;
+      color: #2f333b;
       font-weight: 900;
       cursor: pointer;
     }
@@ -779,6 +818,49 @@
       height: 64px;
       object-fit: cover;
       border-radius: 10px;
+    }
+
+    .camera-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1400;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      background: rgba(12, 13, 16, .74);
+      backdrop-filter: blur(8px);
+    }
+
+    .camera-box {
+      width: min(100%, 390px);
+      overflow: hidden;
+      border-radius: 22px;
+      background: #111318;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, .28);
+    }
+
+    .camera-preview {
+      display: block;
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      object-fit: cover;
+      background: #050607;
+    }
+
+    .camera-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 12px;
+      background: #fff;
+    }
+
+    .camera-actions button {
+      height: 46px;
+      border: 0;
+      border-radius: 14px;
+      font-weight: 900;
+      cursor: pointer;
     }
 
     .ai-error {
@@ -1284,10 +1366,11 @@
       <textarea id="foodPrompt" autocomplete="off" placeholder="Опишите блюдо"></textarea>
     </label>
     <div class="scan-row">
-      <button class="scan-button" id="scanPhoto" type="button">📷 Скан камерой</button>
-      <span>или текстом</span>
+      <button class="scan-button" id="scanPhoto" type="button">📷 Камера</button>
+      <button class="gallery-button" id="pickGallery" type="button">🖼️ Галерея</button>
     </div>
-    <input class="hidden" id="foodPhoto" type="file" accept="image/*" capture="environment">
+    <input class="hidden" id="cameraPhoto" type="file" accept="image/*" capture="environment">
+    <input class="hidden" id="galleryPhoto" type="file" accept="image/*">
     <div class="scan-preview hidden" id="scanPreview">
       <img id="scanPreviewImage" alt="Фото блюда">
       <span id="scanPreviewText">Фото готово к анализу</span>
@@ -1309,6 +1392,16 @@
     </div>
     <div class="sheet-actions">
       <button class="ghost" id="closeProfile" type="button">Закрыть</button>
+    </div>
+  </section>
+
+  <section class="camera-overlay hidden" id="cameraOverlay" aria-label="Камера">
+    <div class="camera-box">
+      <video class="camera-preview" id="cameraPreview" autoplay playsinline muted></video>
+      <div class="camera-actions">
+        <button class="ghost" id="closeCamera" type="button">Отмена</button>
+        <button class="send" id="captureCamera" type="button">Сделать фото</button>
+      </div>
     </div>
   </section>
 
@@ -1344,10 +1437,16 @@
     const confirmReset = document.querySelector("#confirmReset");
     const foodPrompt = document.querySelector("#foodPrompt");
     const scanPhoto = document.querySelector("#scanPhoto");
-    const foodPhoto = document.querySelector("#foodPhoto");
+    const pickGallery = document.querySelector("#pickGallery");
+    const cameraPhoto = document.querySelector("#cameraPhoto");
+    const galleryPhoto = document.querySelector("#galleryPhoto");
     const scanPreview = document.querySelector("#scanPreview");
     const scanPreviewImage = document.querySelector("#scanPreviewImage");
     const scanPreviewText = document.querySelector("#scanPreviewText");
+    const cameraOverlay = document.querySelector("#cameraOverlay");
+    const cameraPreview = document.querySelector("#cameraPreview");
+    const closeCamera = document.querySelector("#closeCamera");
+    const captureCamera = document.querySelector("#captureCamera");
     const aiError = document.querySelector("#aiError");
     const sendMeal = document.querySelector("#sendMeal");
     const history = document.querySelector("#history");
@@ -1401,6 +1500,8 @@
     let target = 2188;
     let calendarExpanded = false;
     let selectedPhotoDataUrl = "";
+    let cameraStream = null;
+    let editingProfileStep = false;
 
     function toDateKey(date = new Date()) {
       const year = date.getFullYear();
@@ -1521,9 +1622,11 @@
       }
     }
 
-    function profileRow(icon, label, value) {
+    function profileRow(icon, label, value, editStep = "") {
+      const isInfo = editStep === "info";
+      const editAttribute = editStep && !isInfo ? ` data-edit="${editStep}"` : "";
       return `
-        <div class="profile-row">
+        <div class="profile-row${isInfo ? " info" : ""}"${editAttribute}>
           <span>${icon}</span>
           <span>${label}</span>
           <strong>${value}</strong>
@@ -1546,28 +1649,28 @@
             <button class="recalc-button" id="recalculatePlan" type="button">Пересчитать план</button>
           </div>
           <div class="goal-cards">
-            <div class="goal-card">
+            <button class="goal-card" type="button" data-edit="targetWeight">
               <span>Вес</span>
               <strong>${profile.targetWeight} кг</strong><small>✎</small>
-            </div>
+            </button>
             <div class="goal-arrow">→</div>
-            <div class="goal-card">
+            <button class="goal-card" type="button" data-edit="speed">
               <span>К дате</span>
               <strong>${targetDate}</strong><small>✎</small>
-            </div>
+            </button>
           </div>
-          ${profileRow("♂️", "Пол", genderName(profile.gender))}
-          ${profileRow("🗓️", "Возраст", getAge(profile))}
-          ${profileRow("📏", "Рост", `${profile.height} см`)}
-          ${profileRow("⚖️", "Вес", `${profile.weight} кг`)}
-          ${profileRow("🥗", "Диета", getDietLabel(profile.diet))}
-          ${profileRow("🏃", "Уровень активности", activityName(profile.activity))}
+          ${profileRow("♂️", "Пол", genderName(profile.gender), "gender")}
+          ${profileRow("🗓️", "Возраст", getAge(profile), "birth")}
+          ${profileRow("📏", "Рост", `${profile.height} см`, "height")}
+          ${profileRow("⚖️", "Вес", `${profile.weight} кг`, "weight")}
+          ${profileRow("🥗", "Диета", getDietLabel(profile.diet), "diet")}
+          ${profileRow("🏃", "Уровень активности", activityName(profile.activity), "activity")}
         </section>
         <section class="profile-section">
           ${profileRow("🌐", "Язык", "Русский")}
-          ${profileRow("📐", "Система измерения", measureSystemName(profile))}
-          ${profileRow("🔥", "Режим идет", `${getRegimeDays(profile)} дней`)}
-          ${profileRow("📅", "Дата старта", formatDateOnly(profile.startedAt))}
+          ${profileRow("📐", "Система измерения", measureSystemName(profile), "height")}
+          ${profileRow("🔥", "Режим идет", `${getRegimeDays(profile)} дней`, "info")}
+          ${profileRow("📅", "Дата старта", formatDateOnly(profile.startedAt), "info")}
         </section>
       `;
     }
@@ -2102,6 +2205,7 @@
       } else {
         profileDraft[key] = value;
       }
+      generatedPlan = null;
       item.parentElement.querySelectorAll(".wheel-item").forEach((node) => {
         node.classList.toggle("active", node === item);
       });
@@ -2178,16 +2282,42 @@
           percentNode.textContent = "100%";
         }
         setTimeout(() => {
+          if (editingProfileStep) {
+            completeOnboarding();
+            return;
+          }
           activeStep += 1;
           renderOnboarding();
         }, 250);
       }
     }
 
+    function startPlanRefresh() {
+      activeStep = stepKeys.indexOf("loading");
+      renderOnboarding();
+    }
+
     function showOnboarding(reset = false) {
       profileDraft = reset ? { ...(getProfile() || profileDefaults) } : { ...profileDefaults };
       generatedPlan = null;
+      editingProfileStep = false;
       activeStep = 0;
+      appRoot.classList.add("hidden");
+      sheet.classList.remove("open");
+      profileSheet.classList.remove("open");
+      onboarding.classList.remove("hidden");
+      renderOnboarding();
+    }
+
+    function editProfileStep(step) {
+      const profile = getProfile();
+      if (!profile) {
+        return;
+      }
+      profileDraft = { ...profile };
+      generatedPlan = null;
+      editingProfileStep = true;
+      activeStep = Math.max(0, stepKeys.indexOf(step));
       appRoot.classList.add("hidden");
       sheet.classList.remove("open");
       profileSheet.classList.remove("open");
@@ -2210,9 +2340,11 @@
     }
 
     function completeOnboarding() {
+      const previousProfile = getProfile();
       profileDraft.plan = generatedPlan || calculatePlan(profileDraft);
-      profileDraft.startedAt = new Date().toISOString();
+      profileDraft.startedAt = previousProfile?.startedAt || new Date().toISOString();
       localStorage.setItem("caloryx_profile", JSON.stringify(profileDraft));
+      editingProfileStep = false;
       applyProfile(profileDraft);
       showApp();
     }
@@ -2472,6 +2604,10 @@
           normalizeTargetWeight();
         }
         generatedPlan = null;
+        if (editingProfileStep) {
+          startPlanRefresh();
+          return;
+        }
         renderOnboarding();
         return;
       }
@@ -2479,6 +2615,7 @@
       const unitButton = event.target.closest("[data-unit-key]");
       if (unitButton) {
         profileDraft[unitButton.dataset.unitKey] = unitButton.dataset.unit;
+        generatedPlan = null;
         renderOnboarding();
         return;
       }
@@ -2525,6 +2662,12 @@
       if (stepKeys[activeStep] === "loading") {
         return;
       }
+      if (editingProfileStep) {
+        normalizeTargetWeight();
+        generatedPlan = null;
+        startPlanRefresh();
+        return;
+      }
       activeStep = Math.min(activeStep + 1, stepKeys.length - 1);
       renderOnboarding();
     });
@@ -2540,11 +2683,16 @@
     });
 
     profileStats.addEventListener("click", (event) => {
-      if (!event.target.closest("#recalculatePlan")) {
+      if (event.target.closest("#recalculatePlan")) {
+        profileSheet.classList.remove("open");
+        showOnboarding(true);
         return;
       }
-      profileSheet.classList.remove("open");
-      showOnboarding(true);
+      const editTarget = event.target.closest("[data-edit]");
+      if (!editTarget) {
+        return;
+      }
+      editProfileStep(editTarget.dataset.edit);
     });
 
     closeProfile.addEventListener("click", () => {
@@ -2580,15 +2728,79 @@
     });
 
     document.querySelector("#closeSheet").addEventListener("click", () => {
+      stopCamera();
       sheet.classList.remove("open");
     });
 
-    scanPhoto.addEventListener("click", () => {
-      foodPhoto.click();
+    function stopCamera() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach((track) => track.stop());
+      }
+      cameraStream = null;
+      cameraPreview.srcObject = null;
+      cameraOverlay.classList.add("hidden");
+    }
+
+    async function openCamera() {
+      aiError.textContent = "";
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        aiError.textContent = "Камера недоступна в этом Telegram/WebView. Нажмите «Галерея» или откройте Mini App на телефоне с HTTPS.";
+        return;
+      }
+      scanPhoto.disabled = true;
+      scanPhoto.textContent = "Открываю...";
+      try {
+        stopCamera();
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: "environment" },
+            width: { ideal: 1280 },
+            height: { ideal: 1600 }
+          },
+          audio: false
+        });
+        cameraPreview.srcObject = cameraStream;
+        cameraOverlay.classList.remove("hidden");
+        await cameraPreview.play();
+      } catch (error) {
+        aiError.textContent = "Telegram не дал доступ к камере. Проверьте разрешение камеры или используйте кнопку «Галерея».";
+      } finally {
+        scanPhoto.disabled = false;
+        scanPhoto.textContent = "📷 Камера";
+      }
+    }
+
+    function captureCameraFrame() {
+      if (!cameraStream || !cameraPreview.videoWidth || !cameraPreview.videoHeight) {
+        aiError.textContent = "Камера еще не готова. Попробуйте еще раз.";
+        return;
+      }
+      const maxSide = 1100;
+      const scale = Math.min(1, maxSide / Math.max(cameraPreview.videoWidth, cameraPreview.videoHeight));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(cameraPreview.videoWidth * scale);
+      canvas.height = Math.round(cameraPreview.videoHeight * scale);
+      const context = canvas.getContext("2d");
+      context.drawImage(cameraPreview, 0, 0, canvas.width, canvas.height);
+      selectedPhotoDataUrl = canvas.toDataURL("image/jpeg", 0.78);
+      scanPreviewImage.src = selectedPhotoDataUrl;
+      scanPreviewText.textContent = "Фото с камеры готово. Можно добавить или дописать уточнение.";
+      scanPreview.classList.remove("hidden");
+      aiError.textContent = "";
+      stopCamera();
+    }
+
+    scanPhoto.addEventListener("click", openCamera);
+
+    closeCamera.addEventListener("click", stopCamera);
+
+    captureCamera.addEventListener("click", captureCameraFrame);
+
+    pickGallery.addEventListener("click", () => {
+      galleryPhoto.click();
     });
 
-    foodPhoto.addEventListener("change", async () => {
-      const file = foodPhoto.files?.[0];
+    async function handlePhotoPick(file) {
       if (!file) {
         return;
       }
@@ -2598,6 +2810,7 @@
       }
       aiError.textContent = "";
       scanPhoto.disabled = true;
+      pickGallery.disabled = true;
       scanPhoto.textContent = "Готовлю фото...";
       try {
         selectedPhotoDataUrl = await compressImage(file);
@@ -2610,8 +2823,17 @@
         aiError.textContent = error.message;
       } finally {
         scanPhoto.disabled = false;
-        scanPhoto.textContent = "📷 Скан камерой";
+        pickGallery.disabled = false;
+        scanPhoto.textContent = "📷 Камера";
       }
+    }
+
+    cameraPhoto.addEventListener("change", async () => {
+      await handlePhotoPick(cameraPhoto.files?.[0]);
+    });
+
+    galleryPhoto.addEventListener("change", async () => {
+      await handlePhotoPick(galleryPhoto.files?.[0]);
     });
 
     sendMeal.addEventListener("click", async () => {
@@ -2623,6 +2845,7 @@
       aiError.textContent = "";
       sendMeal.disabled = true;
       scanPhoto.disabled = true;
+      pickGallery.disabled = true;
       sendMeal.textContent = selectedPhotoDataUrl ? "ИИ смотрит фото..." : "ИИ считает...";
       try {
         const analysis = selectedPhotoDataUrl
@@ -2630,7 +2853,8 @@
           : await analyzeFoodDescription(description);
         addMealFromAnalysis(analysis, description || "Скан продукта");
         foodPrompt.value = "";
-        foodPhoto.value = "";
+        cameraPhoto.value = "";
+        galleryPhoto.value = "";
         selectedPhotoDataUrl = "";
         scanPreview.classList.add("hidden");
         sheet.classList.remove("open");
@@ -2639,6 +2863,7 @@
       } finally {
         sendMeal.disabled = false;
         scanPhoto.disabled = false;
+        pickGallery.disabled = false;
         sendMeal.textContent = "Добавить";
       }
     });
