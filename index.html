@@ -941,6 +941,230 @@
       font-size: 19px;
     }
 
+    .sheet.ingredient-sheet {
+      z-index: 1320;
+      padding: 0 10px calc(20px + env(safe-area-inset-bottom));
+    }
+
+    .ingredient-sheet-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 0 -10px 18px;
+      padding: 14px 10px 12px;
+      border-bottom: 1px solid #ececef;
+    }
+
+    .ingredient-sheet-head h2 {
+      margin: 0;
+      color: #111318;
+      font-size: 27px;
+      line-height: 1.05;
+      font-weight: 500;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .ingredient-sheet-subtitle {
+      margin: 3px 0 0;
+      color: #969aa3;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .ingredient-sheet-close {
+      width: 36px;
+      height: 36px;
+      flex: 0 0 36px;
+      border: 0;
+      background: transparent;
+      color: #9da1a8;
+      font-size: 30px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .ingredient-form {
+      display: grid;
+      gap: 18px;
+    }
+
+    .ingredient-field {
+      display: grid;
+      gap: 8px;
+      color: #55585f;
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .ingredient-input-wrap {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      min-height: 42px;
+      overflow: hidden;
+      border: 1px solid #d5d5d8;
+      border-radius: 17px;
+      background: #fff;
+    }
+
+    .ingredient-input-wrap input {
+      width: 100%;
+      min-width: 0;
+      height: 40px;
+      border: 0;
+      outline: 0;
+      padding: 0 12px;
+      background: transparent;
+      color: #22242a;
+      font: inherit;
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .ingredient-input-wrap input::placeholder {
+      color: #9da1aa;
+    }
+
+    .ingredient-unit {
+      padding-right: 12px;
+      color: #9ba0ad;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .ingredient-ai-panel {
+      overflow: hidden;
+      border-radius: 13px;
+      background: #f3f3f3;
+    }
+
+    .ingredient-ai-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px 16px 12px;
+    }
+
+    .ingredient-ai-copy strong,
+    .ingredient-ai-copy span {
+      display: block;
+    }
+
+    .ingredient-ai-copy strong {
+      color: #5f6166;
+      font-size: 17px;
+    }
+
+    .ingredient-ai-copy span {
+      margin-top: 4px;
+      color: #9a9da4;
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .ingredient-ai-toggle {
+      position: relative;
+      width: 42px;
+      height: 24px;
+      flex: 0 0 42px;
+    }
+
+    .ingredient-ai-toggle input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .ingredient-ai-toggle span {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: #dddfe2;
+      cursor: pointer;
+      transition: background .18s ease;
+    }
+
+    .ingredient-ai-toggle span::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, .18);
+      transition: transform .18s ease;
+    }
+
+    .ingredient-ai-toggle input:checked + span {
+      background: linear-gradient(90deg, #8fd719 0 54%, #0fa69a 54% 100%);
+    }
+
+    .ingredient-ai-toggle input:checked + span::after {
+      transform: translateX(18px);
+    }
+
+    .ingredient-ai-status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-height: 58px;
+      padding: 12px;
+      color: #898c93;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .ingredient-ai-status strong {
+      color: var(--green);
+      font-size: 21px;
+    }
+
+    .ingredient-manual-fields {
+      display: grid;
+      gap: 14px;
+      padding: 16px;
+      border-top: 1px solid #dedfe2;
+    }
+
+    .ingredient-macro-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .ingredient-macro-grid .ingredient-field {
+      min-width: 0;
+      font-size: 14px;
+    }
+
+    .ingredient-macro-grid .ingredient-input-wrap {
+      border-radius: 15px;
+    }
+
+    .ingredient-submit {
+      width: 100%;
+      height: 48px;
+      border: 0;
+      border-radius: 15px;
+      background: #2f3034;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .ingredient-submit:disabled {
+      opacity: .55;
+      cursor: progress;
+    }
+
     .profile-stats {
       display: grid;
       gap: 12px;
@@ -1865,6 +2089,60 @@
     </div>
   </section>
 
+  <section class="sheet ingredient-sheet" id="ingredientSheet" aria-label="Добавить ингредиент">
+    <div class="ingredient-sheet-head">
+      <div>
+        <h2>Добавить ингредиент</h2>
+        <p class="ingredient-sheet-subtitle">Измените калории</p>
+      </div>
+      <button class="ingredient-sheet-close" id="closeIngredient" type="button" aria-label="Закрыть">×</button>
+    </div>
+    <form class="ingredient-form" id="ingredientForm" novalidate>
+      <label class="ingredient-field">
+        <span>Ингредиент</span>
+        <span class="ingredient-input-wrap">
+          <input id="ingredientName" type="text" autocomplete="off" placeholder="Введите название ингредиента">
+        </span>
+      </label>
+      <label class="ingredient-field">
+        <span>Вес</span>
+        <span class="ingredient-input-wrap">
+          <input id="ingredientWeight" type="number" inputmode="decimal" min="1" max="5000" step="1" value="0">
+          <span class="ingredient-unit">Граммы</span>
+        </span>
+      </label>
+      <section class="ingredient-ai-panel">
+        <div class="ingredient-ai-head">
+          <div class="ingredient-ai-copy">
+            <strong>Заполнить с ИИ</strong>
+            <span>Отключите, чтобы ввести КБЖУ вручную</span>
+          </div>
+          <label class="ingredient-ai-toggle" aria-label="Заполнить КБЖУ с ИИ">
+            <input id="ingredientAiToggle" type="checkbox" checked>
+            <span></span>
+          </label>
+        </div>
+        <div class="ingredient-ai-status" id="ingredientAiStatus"><strong>✣</strong><span>ИИ рассчитает КБЖУ</span></div>
+        <div class="ingredient-manual-fields hidden" id="ingredientManualFields">
+          <label class="ingredient-field">
+            <span>Калории</span>
+            <span class="ingredient-input-wrap">
+              <input id="ingredientCalories" type="number" inputmode="decimal" min="0" max="10000" step="1" value="0">
+              <span class="ingredient-unit">🔥</span>
+            </span>
+          </label>
+          <div class="ingredient-macro-grid">
+            <label class="ingredient-field"><span>Белки</span><span class="ingredient-input-wrap"><input id="ingredientProtein" type="number" inputmode="decimal" min="0" max="1000" step="0.1" value="0"></span></label>
+            <label class="ingredient-field"><span>Жиры</span><span class="ingredient-input-wrap"><input id="ingredientFat" type="number" inputmode="decimal" min="0" max="1000" step="0.1" value="0"></span></label>
+            <label class="ingredient-field"><span>Углеводы</span><span class="ingredient-input-wrap"><input id="ingredientCarbs" type="number" inputmode="decimal" min="0" max="1000" step="0.1" value="0"></span></label>
+          </div>
+        </div>
+      </section>
+      <div class="ai-error" id="ingredientError"></div>
+      <button class="ingredient-submit" id="saveIngredient" type="submit">Рассчитать и добавить</button>
+    </form>
+  </section>
+
   <section class="camera-overlay hidden" id="cameraOverlay" aria-label="Камера">
     <div class="camera-box">
       <video class="camera-preview" id="cameraPreview" autoplay playsinline muted></video>
@@ -1910,6 +2188,20 @@
     const refineError = document.querySelector("#refineError");
     const closeRefine = document.querySelector("#closeRefine");
     const sendRefine = document.querySelector("#sendRefine");
+    const ingredientSheet = document.querySelector("#ingredientSheet");
+    const ingredientForm = document.querySelector("#ingredientForm");
+    const closeIngredient = document.querySelector("#closeIngredient");
+    const ingredientName = document.querySelector("#ingredientName");
+    const ingredientWeight = document.querySelector("#ingredientWeight");
+    const ingredientAiToggle = document.querySelector("#ingredientAiToggle");
+    const ingredientAiStatus = document.querySelector("#ingredientAiStatus");
+    const ingredientManualFields = document.querySelector("#ingredientManualFields");
+    const ingredientCalories = document.querySelector("#ingredientCalories");
+    const ingredientProtein = document.querySelector("#ingredientProtein");
+    const ingredientFat = document.querySelector("#ingredientFat");
+    const ingredientCarbs = document.querySelector("#ingredientCarbs");
+    const ingredientError = document.querySelector("#ingredientError");
+    const saveIngredient = document.querySelector("#saveIngredient");
     const resetPlan = document.querySelector("#resetPlan");
     const resetConfirm = document.querySelector("#resetConfirm");
     const confirmUserName = document.querySelector("#confirmUserName");
@@ -2994,6 +3286,16 @@
       `;
     }
 
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#039;"
+      })[character]);
+    }
+
     function renderMealDetail() {
       const meal = getMealsForDate()[activeMealIndex];
       if (!meal) {
@@ -3008,7 +3310,7 @@
         : [{ name: meal.foodName, calories: meal.calories }];
       mealDetailDate.textContent = formatMealDateTime(meal);
       mealDetailBody.innerHTML = `
-        <h2 class="meal-detail-title">${meal.foodName}</h2>
+        <h2 class="meal-detail-title">${escapeHtml(meal.foodName)}</h2>
         <div class="meal-control-row">
           <div class="portion-control">
             <button type="button" aria-label="Уменьшить порцию">-</button>
@@ -3031,14 +3333,14 @@
             <div class="useful-track"><span style="width: ${useful * 10}%"></span></div>
           </div>
           <div class="ai-recommend"><span><span class="ai-badge">AI ✨</span>Рекомендации</span><span>⌄</span></div>
-          <div class="recommend-card">${mealRecommendation(meal)}</div>
+          <div class="recommend-card">${escapeHtml(mealRecommendation(meal))}</div>
         </section>
         <h3 class="ingredients-title">Ингредиенты<span class="ingredients-count">${ingredients.length}</span></h3>
         <div class="ingredients-list">
           ${ingredients.map((ingredient) => `
             <div class="ingredient-row">
               <button class="ingredient-remove" type="button" aria-label="Удалить ингредиент">×</button>
-              <span>${ingredient.name}</span>
+              <span>${escapeHtml(ingredient.name)}</span>
               <span class="ingredient-kcal">${ingredient.calories || meal.calories} ккал</span>
             </div>
           `).join("")}
@@ -3056,6 +3358,7 @@
     function closeMealDetailView() {
       mealDetail.classList.remove("open");
       refineSheet.classList.remove("open");
+      ingredientSheet.classList.remove("open");
       activeMealIndex = null;
     }
 
@@ -3508,7 +3811,128 @@
         openRefineSheet("meal");
       }
       if (event.target.closest("#addIngredient")) {
-        openRefineSheet("ingredient");
+        openIngredientSheet();
+      }
+    });
+
+    function setIngredientAiMode(enabled) {
+      ingredientManualFields.classList.toggle("hidden", enabled);
+      ingredientAiStatus.classList.toggle("hidden", !enabled);
+      saveIngredient.textContent = enabled ? "Рассчитать и добавить" : "Добавить ингредиент";
+    }
+
+    function resetIngredientForm() {
+      ingredientForm.reset();
+      ingredientWeight.value = "0";
+      ingredientCalories.value = "0";
+      ingredientProtein.value = "0";
+      ingredientFat.value = "0";
+      ingredientCarbs.value = "0";
+      ingredientAiToggle.checked = true;
+      ingredientError.textContent = "";
+      saveIngredient.disabled = false;
+      setIngredientAiMode(true);
+    }
+
+    function openIngredientSheet() {
+      const meal = getMealsForDate()[activeMealIndex];
+      if (!meal) {
+        return;
+      }
+      resetIngredientForm();
+      ingredientSheet.classList.add("open");
+      ingredientName.focus();
+    }
+
+    function addIngredientToMeal(ingredient) {
+      const dayMeals = [...getMealsForDate()];
+      const meal = dayMeals[activeMealIndex];
+      if (!meal) {
+        return;
+      }
+      const mealMacros = meal.macros || estimateMacros(Number(meal.calories) || 0);
+      const ingredientMacros = ingredient.macros || estimateMacros(Number(ingredient.calories) || 0);
+      const oldIngredients = meal.ingredients?.length
+        ? meal.ingredients
+        : [{ name: meal.foodName, calories: meal.calories }];
+      const totalGrams = Math.max(0, Number(meal.grams) || 0) + ingredient.grams;
+      dayMeals[activeMealIndex] = {
+        ...meal,
+        calories: Math.round((Number(meal.calories) || 0) + ingredient.calories),
+        grams: totalGrams,
+        portionLabel: `${Math.round(totalGrams)}г`,
+        macros: {
+          protein: Math.round(((Number(mealMacros.protein) || 0) + ingredientMacros.protein) * 10) / 10,
+          fat: Math.round(((Number(mealMacros.fat) || 0) + ingredientMacros.fat) * 10) / 10,
+          carbs: Math.round(((Number(mealMacros.carbs) || 0) + ingredientMacros.carbs) * 10) / 10
+        },
+        ingredients: [...oldIngredients, ingredient]
+      };
+      setMealsForDate(selectedDateKey, dayMeals);
+      saveState();
+      renderState();
+      renderMealDetail();
+    }
+
+    ingredientAiToggle.addEventListener("change", () => {
+      setIngredientAiMode(ingredientAiToggle.checked);
+    });
+
+    closeIngredient.addEventListener("click", () => {
+      ingredientSheet.classList.remove("open");
+    });
+
+    ingredientForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const name = ingredientName.value.trim();
+      const grams = Number(ingredientWeight.value);
+      if (name.length < 2) {
+        ingredientError.textContent = "Введите название ингредиента";
+        ingredientName.focus();
+        return;
+      }
+      if (!Number.isFinite(grams) || grams <= 0) {
+        ingredientError.textContent = "Укажите вес больше 0 граммов";
+        ingredientWeight.focus();
+        return;
+      }
+
+      ingredientError.textContent = "";
+      saveIngredient.disabled = true;
+      saveIngredient.textContent = ingredientAiToggle.checked ? "ИИ рассчитывает..." : "Добавление...";
+      try {
+        let ingredient;
+        if (ingredientAiToggle.checked) {
+          const analysis = await analyzeFoodDescription(`${name}, ${grams} г. Рассчитай КБЖУ только этого отдельного ингредиента.`);
+          ingredient = {
+            name: analysis.food_name || name,
+            grams,
+            calories: Math.max(0, Number(analysis.calories) || 0),
+            macros: {
+              protein: Math.max(0, Number(analysis.protein) || 0),
+              fat: Math.max(0, Number(analysis.fat) || 0),
+              carbs: Math.max(0, Number(analysis.carbs) || 0)
+            }
+          };
+        } else {
+          ingredient = {
+            name,
+            grams,
+            calories: Math.max(0, Number(ingredientCalories.value) || 0),
+            macros: {
+              protein: Math.max(0, Number(ingredientProtein.value) || 0),
+              fat: Math.max(0, Number(ingredientFat.value) || 0),
+              carbs: Math.max(0, Number(ingredientCarbs.value) || 0)
+            }
+          };
+        }
+        addIngredientToMeal(ingredient);
+        ingredientSheet.classList.remove("open");
+      } catch (error) {
+        ingredientError.textContent = error.message;
+      } finally {
+        saveIngredient.disabled = false;
+        setIngredientAiMode(ingredientAiToggle.checked);
       }
     });
 
@@ -3518,7 +3942,7 @@
         return;
       }
       refineMode = mode;
-      refinePrompt.value = mode === "ingredient" ? "Добавь ингредиент: " : "";
+      refinePrompt.value = "";
       refineError.textContent = "";
       sendRefine.disabled = true;
       refineSheet.classList.add("open");
@@ -3545,9 +3969,7 @@
       sendRefine.disabled = true;
       sendRefine.textContent = "ИИ уточняет...";
       try {
-        const prompt = refineMode === "ingredient"
-          ? `${meal.foodName}, ${meal.grams || 100} г. ${note}`
-          : `${meal.foodName}, ${meal.grams || 100} г. Уточнение: ${note}`;
+        const prompt = `${meal.foodName}, ${meal.grams || 100} г. Уточнение: ${note}`;
         const analysis = await analyzeFoodDescription(prompt);
         const dayMeals = [...getMealsForDate()];
         dayMeals[activeMealIndex] = buildMealFromAnalysis(analysis, meal.foodName, meal);
