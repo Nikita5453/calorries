@@ -497,6 +497,50 @@
       cursor: pointer;
     }
 
+    .confirm-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .28);
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      z-index: 1200;
+    }
+
+    .confirm-dialog {
+      width: min(100%, 360px);
+      border-radius: 18px;
+      background: #fff;
+      padding: 18px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .22);
+    }
+
+    .confirm-dialog h2 {
+      margin: 0 0 10px;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .confirm-dialog p {
+      margin: 0 0 16px;
+      color: #3f4550;
+      line-height: 1.45;
+    }
+
+    .confirm-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .confirm-actions button {
+      height: 44px;
+      border: 0;
+      border-radius: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
     .field {
       display: grid;
       gap: 6px;
@@ -1061,6 +1105,17 @@
     </div>
   </section>
 
+  <section class="confirm-backdrop hidden" id="resetConfirm">
+    <div class="confirm-dialog">
+      <h2 id="confirmUserName">Caloryx</h2>
+      <p>Сбросить текущий режим? Профиль, история еды и счетчик дней будут удалены. После этого начнется первоначальный выбор.</p>
+      <div class="confirm-actions">
+        <button class="ghost" id="cancelReset" type="button">Отмена</button>
+        <button class="send" id="confirmReset" type="button">OK</button>
+      </div>
+    </div>
+  </section>
+
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     const tg = window.Telegram?.WebApp;
@@ -1078,6 +1133,10 @@
     const profileGoal = document.querySelector("#profileGoal");
     const closeProfile = document.querySelector("#closeProfile");
     const resetPlan = document.querySelector("#resetPlan");
+    const resetConfirm = document.querySelector("#resetConfirm");
+    const confirmUserName = document.querySelector("#confirmUserName");
+    const cancelReset = document.querySelector("#cancelReset");
+    const confirmReset = document.querySelector("#confirmReset");
     const foodPrompt = document.querySelector("#foodPrompt");
     const aiError = document.querySelector("#aiError");
     const sendMeal = document.querySelector("#sendMeal");
@@ -1131,6 +1190,14 @@
 
     function getProfile() {
       return JSON.parse(localStorage.getItem("caloryx_profile") || "null");
+    }
+
+    function getTelegramUserName() {
+      const user = tg?.initDataUnsafe?.user;
+      if (!user) {
+        return "Caloryx";
+      }
+      return user.first_name || user.username || "Caloryx";
     }
 
     function formatDateOnly(value) {
@@ -1936,12 +2003,16 @@
     });
 
     resetPlan.addEventListener("click", () => {
-      const confirmed = window.confirm(
-        "Сбросить текущий режим? Профиль, история еды и счетчик дней будут удалены. После этого начнется первоначальный выбор."
-      );
-      if (!confirmed) {
-        return;
-      }
+      confirmUserName.textContent = getTelegramUserName();
+      resetConfirm.classList.remove("hidden");
+    });
+
+    cancelReset.addEventListener("click", () => {
+      resetConfirm.classList.add("hidden");
+    });
+
+    confirmReset.addEventListener("click", () => {
+      resetConfirm.classList.add("hidden");
       localStorage.removeItem("caloryx_profile");
       localStorage.removeItem("caloryx_eaten");
       localStorage.removeItem("caloryx_meals");
