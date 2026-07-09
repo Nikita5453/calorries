@@ -811,9 +811,13 @@
       right: max(8px, calc((100vw - 420px) / 2 + 8px));
       bottom: 32px;
       z-index: 1210;
-      display: flex;
+      display: none;
       justify-content: flex-end;
       pointer-events: none;
+    }
+
+    .meal-detail.open + .detail-actions {
+      display: flex;
     }
 
     .detail-actions button {
@@ -839,7 +843,7 @@
     }
 
     .refine-ai-button {
-      min-width: 132px;
+      min-width: 122px;
       padding: 0 14px;
       border-radius: 999px;
       background: var(--green);
@@ -1843,10 +1847,10 @@
       <span class="meal-detail-date" id="mealDetailDate">09 июл. 21:30</span>
     </div>
     <div id="mealDetailBody"></div>
-    <div class="detail-actions">
-      <button class="refine-ai-button" id="openRefineAi" type="button">✦ Уточнить с ИИ</button>
-    </div>
   </section>
+  <div class="detail-actions">
+    <button class="refine-ai-button" id="openRefineAi" type="button">✦ Уточнить с ИИ</button>
+  </div>
 
   <section class="sheet refine-sheet" id="refineSheet" aria-label="Уточнить с ИИ">
     <h2>Уточнить с ИИ</h2>
