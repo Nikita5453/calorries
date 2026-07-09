@@ -1118,6 +1118,12 @@
       return buildLocalChartPoints();
     }
 
+    function formatChartDate(week) {
+      const date = new Date();
+      date.setDate(date.getDate() + Math.round(Number(week) || 0) * 7);
+      return date.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" });
+    }
+
     function progressChartSvg(plan = null) {
       const points = getChartPoints(plan);
       const weights = points.map((point) => point.weight);
@@ -1133,19 +1139,31 @@
         x: xFor(point.week),
         y: yFor(point.weight),
         weight: point.weight,
-        week: point.week
+        week: point.week,
+        dateLabel: formatChartDate(point.week)
       }));
       const path = svgPoints
         .map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
         .join(" ");
       const markers = svgPoints
         .filter((_point, index) => index > 0 && index < svgPoints.length - 1)
-        .map((point) => `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="7" fill="#fff" stroke="#9fa6af" stroke-width="2"/>`)
+        .map((point) => `
+          <line x1="${point.x.toFixed(1)}" y1="34" x2="${point.x.toFixed(1)}" y2="130" stroke="#dce6c7" stroke-width="1.5"/>
+          <rect x="${(point.x - 22).toFixed(1)}" y="14" width="44" height="20" rx="10" fill="#fff" stroke="#cfe7a0"/>
+          <text x="${point.x.toFixed(1)}" y="28" text-anchor="middle" fill="#7e8792" font-size="10" font-weight="800">${point.dateLabel}</text>
+          <circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="7" fill="#fff" stroke="#9fa6af" stroke-width="2"/>
+        `)
         .join("");
       const startPoint = svgPoints[0];
       const endPoint = svgPoints[svgPoints.length - 1];
       return `
         <svg viewBox="0 0 320 160" role="img" aria-label="График реального прогресса">
+          <line x1="${startPoint.x.toFixed(1)}" y1="34" x2="${startPoint.x.toFixed(1)}" y2="130" stroke="#e4edcf" stroke-width="1.5"/>
+          <line x1="${endPoint.x.toFixed(1)}" y1="34" x2="${endPoint.x.toFixed(1)}" y2="130" stroke="#cfe7a0" stroke-width="2"/>
+          <rect x="${(startPoint.x - 22).toFixed(1)}" y="14" width="44" height="20" rx="10" fill="#f8ffe9" stroke="#dceeb5"/>
+          <text x="${startPoint.x.toFixed(1)}" y="28" text-anchor="middle" fill="#7e8792" font-size="10" font-weight="800">${startPoint.dateLabel}</text>
+          <rect x="${(endPoint.x - 22).toFixed(1)}" y="14" width="44" height="20" rx="10" fill="#9dde1d" stroke="#8ccd15"/>
+          <text x="${endPoint.x.toFixed(1)}" y="28" text-anchor="middle" fill="#fff" font-size="10" font-weight="900">${endPoint.dateLabel}</text>
           <path d="M15 130 H305" stroke="#9fa6af" stroke-width="2"/>
           <path d="${path}" fill="none" stroke="#9dde1d" stroke-width="3" stroke-dasharray="8 8" stroke-linecap="round" stroke-linejoin="round"/>
           ${markers}
