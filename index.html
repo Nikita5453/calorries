@@ -158,6 +158,16 @@
       opacity: .62;
     }
 
+    .day.future {
+      cursor: not-allowed;
+      opacity: .42;
+    }
+
+    .day.future strong,
+    .day.future span {
+      color: #9fa3ad;
+    }
+
     .day .dot {
       width: 8px;
       height: 8px;
@@ -1221,6 +1231,10 @@
       return `${year}-${month}-${day}`;
     }
 
+    function isFutureDateKey(dateKey) {
+      return dateKey > toDateKey();
+    }
+
     function fromDateKey(dateKey) {
       const [year, month, day] = dateKey.split("-").map(Number);
       return new Date(year, month - 1, day);
@@ -1242,6 +1256,9 @@
     }
 
     let selectedDateKey = localStorage.getItem("caloryx_selected_date") || toDateKey();
+    if (isFutureDateKey(selectedDateKey)) {
+      selectedDateKey = toDateKey();
+    }
     let visibleMonthDate = fromDateKey(selectedDateKey);
     let mealsByDate = readMealsByDate();
 
@@ -1978,10 +1995,11 @@
         const isActive = dateKey === selectedDateKey;
         const hasFood = getEatenForDate(dateKey) > 0;
         const isOutside = calendarExpanded && date.getMonth() !== monthDate.getMonth();
+        const isFuture = isFutureDateKey(dateKey);
         const weekday = date.toLocaleDateString("ru-RU", { weekday: "short" }).slice(0, 2);
         const weekdayLabel = calendarExpanded ? (index < 7 ? weekday : "") : weekday;
         return `
-          <button class="day${isActive ? " active" : ""}${hasFood ? " has-food" : ""}${isOutside ? " outside" : ""}" type="button" data-date="${dateKey}">
+          <button class="day${isActive ? " active" : ""}${hasFood ? " has-food" : ""}${isOutside ? " outside" : ""}${isFuture ? " future" : ""}" type="button" data-date="${dateKey}"${isFuture ? " disabled aria-disabled=\"true\"" : ""}>
             <span>${weekdayLabel}</span>
             <strong>${date.getDate()}</strong>
             <i class="dot"></i>
@@ -2236,6 +2254,9 @@
     calendar.addEventListener("click", (event) => {
       const button = event.target.closest(".day");
       if (!button) {
+        return;
+      }
+      if (button.disabled || isFutureDateKey(button.dataset.date)) {
         return;
       }
       selectedDateKey = button.dataset.date;
