@@ -494,7 +494,7 @@
     .profile-stats {
       display: grid;
       gap: 12px;
-      margin: 18px 0;
+      margin: 12px 0;
     }
 
     .profile-stat {
@@ -514,6 +514,113 @@
     .profile-stat strong {
       font-size: 24px;
       font-weight: 900;
+    }
+
+    .profile-section {
+      border-radius: 14px;
+      background: #fff;
+      overflow: hidden;
+      box-shadow: 0 8px 28px rgba(24, 26, 31, .06);
+    }
+
+    .profile-section + .profile-section {
+      margin-top: 12px;
+    }
+
+    .profile-goal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      border-bottom: 1px solid #e5e5e7;
+      font-weight: 900;
+    }
+
+    .recalc-button {
+      border: 0;
+      border-radius: 999px;
+      background: #2f3034;
+      color: #fff;
+      padding: 12px 16px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .goal-cards {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 16px;
+      background: #fff;
+    }
+
+    .goal-card {
+      border-radius: 12px;
+      background: #f2f3f6;
+      padding: 16px;
+    }
+
+    .goal-card span {
+      display: block;
+      color: #59606b;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    .goal-card strong {
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .goal-card small {
+      color: #a0a6b0;
+      margin-left: 4px;
+    }
+
+    .goal-arrow {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 28px;
+      height: 28px;
+      transform: translate(-50%, -50%);
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, .12);
+      font-weight: 900;
+    }
+
+    .profile-row {
+      display: grid;
+      grid-template-columns: 28px 1fr auto 16px;
+      align-items: center;
+      gap: 8px;
+      min-height: 56px;
+      padding: 0 16px;
+      border-top: 1px solid #e5e5e7;
+      color: #5f6570;
+      font-size: 15px;
+    }
+
+    .profile-row:first-child {
+      border-top: 0;
+    }
+
+    .profile-row strong {
+      color: #4a4f58;
+      font-size: 15px;
+      font-weight: 800;
+      text-align: right;
+    }
+
+    .profile-row .chevron {
+      color: #a5a9b1;
+      font-size: 24px;
+      line-height: 1;
     }
 
     .danger-zone {
@@ -935,6 +1042,39 @@
       gap: 14px;
     }
 
+    .speed-overview {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .speed-card {
+      border-radius: 12px;
+      background: #fff;
+      padding: 14px 16px;
+      text-align: left;
+    }
+
+    .speed-card span {
+      display: block;
+      color: #4b5059;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .speed-card strong {
+      color: #15171b;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .speed-card small {
+      color: #9aa0aa;
+      font-size: 14px;
+      margin-left: 4px;
+    }
+
     .speed-value {
       font-size: 24px;
       font-weight: 900;
@@ -1162,20 +1302,7 @@
 
   <section class="sheet" id="profileSheet" aria-label="Профиль">
     <h2>Профиль</h2>
-    <div class="profile-stats">
-      <div class="profile-stat">
-        <span>Режим идет</span>
-        <strong id="profileDays">0 дней</strong>
-      </div>
-      <div class="profile-stat">
-        <span>Дата старта</span>
-        <strong id="profileStart">-</strong>
-      </div>
-      <div class="profile-stat">
-        <span>Цель</span>
-        <strong id="profileGoal">-</strong>
-      </div>
-    </div>
+    <div class="profile-stats" id="profileStats"></div>
     <div class="danger-zone">
       Сброс режима удалит текущий профиль, историю еды и счетчик дней. После подтверждения откроется первоначальный выбор.
       <button class="danger-button" id="resetPlan" type="button">Сбросить режим</button>
@@ -1208,9 +1335,7 @@
     const profileButton = document.querySelector(".profile");
     const sheet = document.querySelector("#sheet");
     const profileSheet = document.querySelector("#profileSheet");
-    const profileDays = document.querySelector("#profileDays");
-    const profileStart = document.querySelector("#profileStart");
-    const profileGoal = document.querySelector("#profileGoal");
+    const profileStats = document.querySelector("#profileStats");
     const closeProfile = document.querySelector("#closeProfile");
     const resetPlan = document.querySelector("#resetPlan");
     const resetConfirm = document.querySelector("#resetConfirm");
@@ -1357,11 +1482,94 @@
       }[goal] || "-";
     }
 
+    function genderName(gender) {
+      return {
+        male: "Мужской",
+        female: "Женский",
+        other: "Другое"
+      }[gender] || "-";
+    }
+
+    function activityName(activity) {
+      const value = Number(activity || 1.375);
+      if (value >= 1.725) {
+        return "Высокая";
+      }
+      if (value >= 1.55) {
+        return "Средняя";
+      }
+      if (value >= 1.375) {
+        return "Лёгкая";
+      }
+      return "Минимальная";
+    }
+
+    function measureSystemName(profile) {
+      return profile?.weightUnit === "imperial" || profile?.heightUnit === "imperial" ? "lb/in" : "кг/см";
+    }
+
+    function targetDateForProfile(profile) {
+      if (!profile) {
+        return "-";
+      }
+      const previousDraft = profileDraft;
+      try {
+        profileDraft = { ...profile };
+        return getFinalChartDate(profile.plan || calculatePlan(profileDraft));
+      } finally {
+        profileDraft = previousDraft;
+      }
+    }
+
+    function profileRow(icon, label, value) {
+      return `
+        <div class="profile-row">
+          <span>${icon}</span>
+          <span>${label}</span>
+          <strong>${value}</strong>
+          <span class="chevron">›</span>
+        </div>
+      `;
+    }
+
     function renderProfileSheet() {
       const profile = getProfile();
-      profileDays.textContent = `${getRegimeDays(profile)} дней`;
-      profileStart.textContent = formatDateOnly(profile?.startedAt);
-      profileGoal.textContent = goalName(profile?.goal);
+      if (!profile) {
+        profileStats.innerHTML = `<div class="profile-stat"><span>Профиль</span><strong>Не создан</strong></div>`;
+        return;
+      }
+      const targetDate = targetDateForProfile(profile);
+      profileStats.innerHTML = `
+        <section class="profile-section">
+          <div class="profile-goal-head">
+            <span>Ваша цель</span>
+            <button class="recalc-button" id="recalculatePlan" type="button">Пересчитать план</button>
+          </div>
+          <div class="goal-cards">
+            <div class="goal-card">
+              <span>Вес</span>
+              <strong>${profile.targetWeight} кг</strong><small>✎</small>
+            </div>
+            <div class="goal-arrow">→</div>
+            <div class="goal-card">
+              <span>К дате</span>
+              <strong>${targetDate}</strong><small>✎</small>
+            </div>
+          </div>
+          ${profileRow("♂️", "Пол", genderName(profile.gender))}
+          ${profileRow("🗓️", "Возраст", getAge(profile))}
+          ${profileRow("📏", "Рост", `${profile.height} см`)}
+          ${profileRow("⚖️", "Вес", `${profile.weight} кг`)}
+          ${profileRow("🥗", "Диета", getDietLabel(profile.diet))}
+          ${profileRow("🏃", "Уровень активности", activityName(profile.activity))}
+        </section>
+        <section class="profile-section">
+          ${profileRow("🌐", "Язык", "Русский")}
+          ${profileRow("📐", "Система измерения", measureSystemName(profile))}
+          ${profileRow("🔥", "Режим идет", `${getRegimeDays(profile)} дней`)}
+          ${profileRow("📅", "Дата старта", formatDateOnly(profile.startedAt))}
+        </section>
+      `;
     }
 
     function getAge(profile) {
@@ -1439,19 +1647,78 @@
       }
     }
 
-    function buildLocalChartPoints() {
-      const start = Number(profileDraft.weight);
-      const end = Number(profileDraft.targetWeight);
-      const diff = Math.abs(end - start);
-      const dietModifier = {
+    function getDietSpeedModifier() {
+      return {
         none: 1,
         vegetarian: profileDraft.goal === "gain" ? 0.92 : 0.97,
         vegan: profileDraft.goal === "gain" ? 0.88 : 0.95,
         keto: profileDraft.goal === "maintain" ? 1 : 0.90,
         paleo: profileDraft.goal === "maintain" ? 1 : 1.02
       }[profileDraft.diet] || 1;
-      const weeklyRate = profileDraft.goal === "maintain" ? 0 : Math.max(0.1, (Number(profileDraft.speed) || 0.4) * dietModifier);
-      const weeks = profileDraft.goal === "maintain" ? 12 : Math.max(4, Math.ceil(diff / weeklyRate));
+    }
+
+    function getBodySpeedModifier() {
+      const heightM = Math.max(1.2, Number(profileDraft.height || 170) / 100);
+      const bmi = Number(profileDraft.weight || 70) / (heightM * heightM);
+      const activity = Number(profileDraft.activity || 1.375);
+      let modifier = 1;
+
+      if (profileDraft.goal === "loss") {
+        if (bmi < 22) {
+          modifier *= 0.82;
+        } else if (bmi > 30) {
+          modifier *= 1.08;
+        }
+      } else if (profileDraft.goal === "gain") {
+        if (bmi < 20) {
+          modifier *= 1.05;
+        } else if (bmi > 27) {
+          modifier *= 0.88;
+        }
+      }
+
+      if (activity <= 1.2) {
+        modifier *= 0.92;
+      } else if (activity >= 1.55) {
+        modifier *= 1.04;
+      }
+
+      return modifier;
+    }
+
+    function getEffectiveWeeklyRate() {
+      if (profileDraft.goal === "maintain") {
+        return 0;
+      }
+      return Math.max(0.1, (Number(profileDraft.speed) || 0.4) * getDietSpeedModifier() * getBodySpeedModifier());
+    }
+
+    function getPlanWeeks() {
+      if (profileDraft.goal === "maintain") {
+        return 12;
+      }
+      const diff = Math.abs(Number(profileDraft.targetWeight) - Number(profileDraft.weight));
+      return Math.max(4, Math.ceil(diff / getEffectiveWeeklyRate()));
+    }
+
+    function getProjectedEndDate() {
+      const date = new Date();
+      date.setDate(date.getDate() + getPlanWeeks() * 7);
+      return date;
+    }
+
+    function formatProjectedEndDate() {
+      return getProjectedEndDate().toLocaleDateString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+      });
+    }
+
+    function buildLocalChartPoints() {
+      const start = Number(profileDraft.weight);
+      const end = Number(profileDraft.targetWeight);
+      const weeks = getPlanWeeks();
       return [0, 0.25, 0.5, 0.75, 1].map((ratio) => {
         const eased = profileDraft.goal === "loss"
           ? 1 - Math.pow(1 - ratio, 1.35)
@@ -1702,16 +1969,28 @@
         `;
       } else if (step === "speed") {
         const words = goalWords();
+        const slowLabel = profileDraft.goal === "gain" ? "Медленно, но чище" : "Медленно, но верно";
+        const fastLabel = profileDraft.goal === "gain" ? "Есть риски: рост жировой массы" : "Есть риски: усталость";
         onboardBody.innerHTML = `
           <h1 class="onboard-title">Как быстро вы хотите достичь цели?</h1>
+          <div class="speed-overview">
+            <div class="speed-card">
+              <span>Вес</span>
+              <strong id="speedTargetWeight">${profileDraft.targetWeight} кг</strong><small>✎</small>
+            </div>
+            <div class="speed-card">
+              <span>К дате</span>
+              <strong id="speedTargetDate">${formatProjectedEndDate()}</strong><small>✎</small>
+            </div>
+          </div>
           <p class="onboard-subtitle">${words.speedTitle}</p>
           <div class="speed-panel">
             <div class="speed-value" id="speedValue">${profileDraft.speed.toFixed(1)} кг</div>
             <input class="speed-range" id="speedRange" type="range" min="0.1" max="0.7" step="0.1" value="${profileDraft.speed}">
             <div class="month-row">
-              <span>0.1 кг<br><small>Медленно</small></span>
+              <span>0.1 кг<br><small>${slowLabel}</small></span>
               <span>0.4 кг<br><small>Рекомендуемая</small></span>
-              <span>0.7 кг<br><small>Быстрее</small></span>
+              <span>0.7 кг<br><small>${fastLabel}</small></span>
             </div>
           </div>
         `;
@@ -2227,9 +2506,14 @@
         return;
       }
       profileDraft.speed = Number(event.target.value);
+      generatedPlan = null;
       const speedValue = document.querySelector("#speedValue");
       if (speedValue) {
         speedValue.textContent = `${profileDraft.speed.toFixed(1)} кг`;
+      }
+      const speedTargetDate = document.querySelector("#speedTargetDate");
+      if (speedTargetDate) {
+        speedTargetDate.textContent = formatProjectedEndDate();
       }
     });
 
@@ -2253,6 +2537,14 @@
     profileButton.addEventListener("click", () => {
       renderProfileSheet();
       profileSheet.classList.add("open");
+    });
+
+    profileStats.addEventListener("click", (event) => {
+      if (!event.target.closest("#recalculatePlan")) {
+        return;
+      }
+      profileSheet.classList.remove("open");
+      showOnboarding(true);
     });
 
     closeProfile.addEventListener("click", () => {
