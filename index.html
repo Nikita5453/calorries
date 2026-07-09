@@ -97,6 +97,11 @@
       line-height: 1;
     }
 
+    .round-btn.open {
+      outline: 2px solid #4a95ff;
+      outline-offset: 0;
+    }
+
     .today-btn {
       border-radius: 999px;
       background: #2f3034;
@@ -118,7 +123,13 @@
       color: var(--muted);
     }
 
+    .calendar.expanded {
+      gap: 6px 4px;
+    }
+
     .day {
+      border: 0;
+      background: transparent;
       height: 82px;
       display: grid;
       grid-template-rows: 22px 26px 12px;
@@ -128,11 +139,23 @@
       font-size: 13px;
       font-weight: 700;
       color: #b5b7be;
+      cursor: pointer;
+    }
+
+    .calendar.expanded .day {
+      height: 54px;
+      grid-template-rows: 18px 24px 8px;
     }
 
     .day strong {
       color: #17181b;
       font-size: 15px;
+    }
+
+    .day.outside strong,
+    .day.outside span {
+      color: #a8abb3;
+      opacity: .62;
     }
 
     .day .dot {
@@ -142,9 +165,17 @@
       background: #fff;
     }
 
+    .day.has-food .dot {
+      background: var(--green);
+    }
+
     .day.active {
       background: var(--green);
       color: #fff;
+    }
+
+    .day.active .dot {
+      background: #fff;
     }
 
     .day.active strong {
@@ -1012,20 +1043,12 @@
     </header>
 
     <section class="month-row" aria-label="Календарь">
-      <button class="round-btn" type="button">⌄</button>
-      <div class="month">Июль 2026</div>
-      <button class="today-btn" type="button">Сегодня</button>
+      <button class="round-btn" id="calendarToggle" type="button" aria-expanded="false">⌄</button>
+      <div class="month" id="monthLabel">Июль 2026</div>
+      <button class="today-btn" id="todayButton" type="button">Сегодня</button>
     </section>
 
-    <section class="calendar">
-      <div class="day"><span>Пн</span><strong>6</strong><i class="dot"></i></div>
-      <div class="day"><span>Вт</span><strong>7</strong><i class="dot"></i></div>
-      <div class="day active"><span>Ср</span><strong>8</strong><i class="dot"></i></div>
-      <div class="day"><span>Чт</span><strong>9</strong><i class="dot"></i></div>
-      <div class="day"><span>Пт</span><strong>10</strong><i class="dot"></i></div>
-      <div class="day"><span>Сб</span><strong>11</strong><i class="dot"></i></div>
-      <div class="day"><span>Вс</span><strong>12</strong><i class="dot"></i></div>
-    </section>
+    <section class="calendar" id="calendar"></section>
 
     <section class="summary">
       <div class="summary-grid">
@@ -1141,6 +1164,10 @@
     const aiError = document.querySelector("#aiError");
     const sendMeal = document.querySelector("#sendMeal");
     const history = document.querySelector("#history");
+    const calendarToggle = document.querySelector("#calendarToggle");
+    const monthLabel = document.querySelector("#monthLabel");
+    const todayButton = document.querySelector("#todayButton");
+    const calendar = document.querySelector("#calendar");
     const leftCalories = document.querySelector("#leftCalories");
     const eatenRing = document.querySelector("#eatenRing");
     const targetRing = document.querySelector("#targetRing");
@@ -1185,8 +1212,38 @@
     let generatedPlan = null;
     let activeStep = 0;
     let target = 2188;
-    let eaten = Number(localStorage.getItem("caloryx_eaten") || 0);
-    let meals = JSON.parse(localStorage.getItem("caloryx_meals") || "[]");
+    let calendarExpanded = false;
+
+    function toDateKey(date = new Date()) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function fromDateKey(dateKey) {
+      const [year, month, day] = dateKey.split("-").map(Number);
+      return new Date(year, month - 1, day);
+    }
+
+    function addDays(date, days) {
+      const next = new Date(date);
+      next.setDate(next.getDate() + days);
+      return next;
+    }
+
+    function readMealsByDate() {
+      const saved = JSON.parse(localStorage.getItem("caloryx_meals_by_date") || "null");
+      if (saved && typeof saved === "object" && !Array.isArray(saved)) {
+        return saved;
+      }
+      const oldMeals = JSON.parse(localStorage.getItem("caloryx_meals") || "[]");
+      return oldMeals.length ? { [toDateKey()]: oldMeals } : {};
+    }
+
+    let selectedDateKey = localStorage.getItem("caloryx_selected_date") || toDateKey();
+    let visibleMonthDate = fromDateKey(selectedDateKey);
+    let mealsByDate = readMealsByDate();
 
     function getProfile() {
       return JSON.parse(localStorage.getItem("caloryx_profile") || "null");
@@ -1819,7 +1876,32 @@
       };
     }
 
-    function getMacroTotals() {
+    function getMealsForDate(dateKey = selectedDateKey) {
+      return mealsByDate[dateKey] || [];
+    }
+
+    function setMealsForDate(dateKey, meals) {
+      if (meals.length) {
+        mealsByDate[dateKey] = meals;
+      } else {
+        delete mealsByDate[dateKey];
+      }
+    }
+
+    function getEatenForDate(dateKey = selectedDateKey) {
+      return getMealsForDate(dateKey).reduce((sum, meal) => sum + (Number(meal.calories) || 0), 0);
+    }
+
+    function formatSelectedDate(dateKey) {
+      const date = fromDateKey(dateKey);
+      const today = toDateKey();
+      if (dateKey === today) {
+        return "Сегодня";
+      }
+      return date.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+    }
+
+    function getMacroTotals(meals = getMealsForDate()) {
       return meals.reduce((totals, meal) => {
         const macros = meal.macros || estimateMacros(Number(meal.calories) || 0);
         totals.protein += macros.protein || 0;
@@ -1842,7 +1924,7 @@
       });
     }
 
-    function getUsefulScore() {
+    function getUsefulScore(meals = getMealsForDate(), eaten = getEatenForDate()) {
       if (!meals.length) {
         return 0;
       }
@@ -1855,28 +1937,71 @@
       const calorieRatio = Math.min(eaten / target, 1);
       const balancePenalty = eaten > target ? 3 : 0;
       const varietyBonus = Math.min(new Set(meals.map((meal) => meal.foodName.toLowerCase())).size, 3);
-      const proteinBonus = Math.min(getMacroTotals().protein / macroTargets.protein, 1) * 2;
+      const proteinBonus = Math.min(getMacroTotals(meals).protein / macroTargets.protein, 1) * 2;
       return Math.max(
         0,
         Math.min(10, Math.round(calorieRatio * 5 + varietyBonus + proteinBonus - balancePenalty))
       );
     }
 
-    function renderUsefulScore() {
-      const score = getUsefulScore();
+    function renderUsefulScore(meals = getMealsForDate(), eaten = getEatenForDate()) {
+      const score = getUsefulScore(meals, eaten);
       usefulScore.textContent = `${score}/10`;
       usefulBar.style.width = `${score * 10}%`;
     }
 
+    function renderCalendar() {
+      const selectedDate = fromDateKey(selectedDateKey);
+      const monthDate = new Date(visibleMonthDate.getFullYear(), visibleMonthDate.getMonth(), 1);
+      monthLabel.textContent = `${monthNames[monthDate.getMonth()]} ${monthDate.getFullYear()}`;
+      calendar.classList.toggle("expanded", calendarExpanded);
+      calendarToggle.classList.toggle("open", calendarExpanded);
+      calendarToggle.setAttribute("aria-expanded", String(calendarExpanded));
+      calendarToggle.textContent = calendarExpanded ? "⌃" : "⌄";
+
+      const days = [];
+      if (calendarExpanded) {
+        const firstDayIndex = (monthDate.getDay() + 6) % 7;
+        const startDate = addDays(monthDate, -firstDayIndex);
+        for (let index = 0; index < 42; index += 1) {
+          days.push(addDays(startDate, index));
+        }
+      } else {
+        const weekStart = addDays(selectedDate, -((selectedDate.getDay() + 6) % 7));
+        for (let index = 0; index < 7; index += 1) {
+          days.push(addDays(weekStart, index));
+        }
+      }
+
+      calendar.innerHTML = days.map((date, index) => {
+        const dateKey = toDateKey(date);
+        const isActive = dateKey === selectedDateKey;
+        const hasFood = getEatenForDate(dateKey) > 0;
+        const isOutside = calendarExpanded && date.getMonth() !== monthDate.getMonth();
+        const weekday = date.toLocaleDateString("ru-RU", { weekday: "short" }).slice(0, 2);
+        const weekdayLabel = calendarExpanded ? (index < 7 ? weekday : "") : weekday;
+        return `
+          <button class="day${isActive ? " active" : ""}${hasFood ? " has-food" : ""}${isOutside ? " outside" : ""}" type="button" data-date="${dateKey}">
+            <span>${weekdayLabel}</span>
+            <strong>${date.getDate()}</strong>
+            <i class="dot"></i>
+          </button>
+        `;
+      }).join("");
+    }
+
     function renderState() {
+      const meals = getMealsForDate();
+      const eaten = getEatenForDate();
       leftCalories.textContent = Math.max(target - eaten, 0);
       eatenRing.textContent = `${eaten} /`;
       targetRing.textContent = target;
       ring.style.setProperty("--progress", `${Math.min(eaten / target, 1) * 360}deg`);
+      renderCalendar();
       renderMacros();
-      renderUsefulScore();
+      renderUsefulScore(meals, eaten);
       if (!meals.length) {
-        history.innerHTML = `<div class="history-item"><b>Сегодня пока пусто</b><span class="history-kcal">0 ккал</span></div>`;
+        history.innerHTML = `<div class="history-item"><b>${formatSelectedDate(selectedDateKey)} пока пусто</b><span class="history-kcal">0 ккал</span></div>`;
         return;
       }
       history.innerHTML = meals
@@ -1900,8 +2025,10 @@
     }
 
     function saveState() {
-      localStorage.setItem("caloryx_eaten", String(eaten));
-      localStorage.setItem("caloryx_meals", JSON.stringify(meals));
+      localStorage.setItem("caloryx_selected_date", selectedDateKey);
+      localStorage.setItem("caloryx_meals_by_date", JSON.stringify(mealsByDate));
+      localStorage.removeItem("caloryx_eaten");
+      localStorage.removeItem("caloryx_meals");
     }
 
     function getCurrentTime() {
@@ -2016,8 +2143,11 @@
       localStorage.removeItem("caloryx_profile");
       localStorage.removeItem("caloryx_eaten");
       localStorage.removeItem("caloryx_meals");
-      eaten = 0;
-      meals = [];
+      localStorage.removeItem("caloryx_meals_by_date");
+      localStorage.removeItem("caloryx_selected_date");
+      selectedDateKey = toDateKey();
+      visibleMonthDate = fromDateKey(selectedDateKey);
+      mealsByDate = {};
       profileDraft = { ...profileDefaults };
       generatedPlan = null;
       showOnboarding();
@@ -2055,10 +2185,12 @@
             fat: Number(analysis.fat) || 0,
             carbs: Number(analysis.carbs) || 0
           },
+          dateKey: selectedDateKey,
           createdAt: getCurrentTime()
         };
-        eaten += calories;
-        meals.unshift(meal);
+        const dayMeals = [...getMealsForDate()];
+        dayMeals.unshift(meal);
+        setMealsForDate(selectedDateKey, dayMeals);
         saveState();
         renderState();
         foodPrompt.value = "";
@@ -2077,12 +2209,37 @@
         return;
       }
       const index = Number(button.dataset.index);
-      const meal = meals[index];
+      const dayMeals = [...getMealsForDate()];
+      const meal = dayMeals[index];
       if (!meal) {
         return;
       }
-      eaten = Math.max(0, eaten - Number(meal.calories || 0));
-      meals.splice(index, 1);
+      dayMeals.splice(index, 1);
+      setMealsForDate(selectedDateKey, dayMeals);
+      saveState();
+      renderState();
+    });
+
+    calendarToggle.addEventListener("click", () => {
+      calendarExpanded = !calendarExpanded;
+      visibleMonthDate = fromDateKey(selectedDateKey);
+      renderCalendar();
+    });
+
+    todayButton.addEventListener("click", () => {
+      selectedDateKey = toDateKey();
+      visibleMonthDate = fromDateKey(selectedDateKey);
+      saveState();
+      renderState();
+    });
+
+    calendar.addEventListener("click", (event) => {
+      const button = event.target.closest(".day");
+      if (!button) {
+        return;
+      }
+      selectedDateKey = button.dataset.date;
+      visibleMonthDate = fromDateKey(selectedDateKey);
       saveState();
       renderState();
     });
