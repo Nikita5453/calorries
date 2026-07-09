@@ -1128,6 +1128,19 @@
       return date.toLocaleDateString("ru-RU", options);
     }
 
+    function formatFullChartDate(week) {
+      const today = new Date();
+      const date = new Date(today);
+      date.setDate(date.getDate() + Math.round(Number(week) || 0) * 7);
+      return date.toISOString().slice(0, 10);
+    }
+
+    function getFinalChartDate(plan = null) {
+      const points = getChartPoints(plan);
+      const lastPoint = points[points.length - 1];
+      return formatFullChartDate(lastPoint?.week || 0);
+    }
+
     function progressChartSvg(plan = null) {
       const points = getChartPoints(plan);
       const weights = points.map((point) => point.weight);
@@ -1375,7 +1388,7 @@
         const words = goalWords();
         const diff = Math.abs(profileDraft.weight - profileDraft.targetWeight);
         const goalLabel = words.goalLabel;
-        const targetDate = plan.target_date || "16.12.2026";
+        const targetDate = getFinalChartDate(plan);
         const advice = Array.isArray(plan.daily_advice) ? plan.daily_advice : [
           "Держите регулярные приемы пищи.",
           "Добавляйте белок в каждый основной прием.",
