@@ -2267,6 +2267,7 @@
     const monthNames = ["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"];
     const PUBLIC_API_BASE = "https://caloryx-free-bot.onrender.com";
     const API_BASE = window.location.protocol === "file:" ? "http://127.0.0.1:8787" : PUBLIC_API_BASE;
+    const TELEGRAM_INIT_DATA = tg?.initData || "";
     const profileDefaults = {
       goal: "loss",
       gender: "male",
@@ -2294,6 +2295,10 @@
     let recommendationsExpanded = true;
     let refineMode = "meal";
     let editingProfileStep = false;
+    let syncReady = false;
+    let syncInProgress = false;
+    let syncPending = false;
+    let syncTimer = null;
 
     function toDateKey(date = new Date()) {
       const year = date.getFullYear();
@@ -2332,6 +2337,119 @@
     }
     let visibleMonthDate = fromDateKey(selectedDateKey);
     let mealsByDate = readMealsByDate();
+
+    function getSyncState() {
+      return {
+        profile: getProfile(),
+        mealsByDate,
+        selectedDateKey
+      };
+    }
+
+    function applySyncState(state) {
+      if (!state || typeof state !== "object") {
+        return;
+      }
+      const profile = state.profile && typeof state.profile === "object" ? state.profile : null;
+      const remoteMeals = state.mealsByDate && typeof state.mealsByDate === "object" && !Array.isArray(state.mealsByDate)
+        ? state.mealsByDate
+        : {};
+      const remoteDate = typeof state.selectedDateKey === "string" && !isFutureDateKey(state.selectedDateKey)
+        ? state.selectedDateKey
+        : toDateKey();
+
+      if (profile) {
+        localStorage.setItem("caloryx_profile", JSON.stringify(profile));
+      } else {
+        localStorage.removeItem("caloryx_profile");
+      }
+      mealsByDate = remoteMeals;
+      selectedDateKey = remoteDate;
+      visibleMonthDate = fromDateKey(selectedDateKey);
+      localStorage.setItem("caloryx_meals_by_date", JSON.stringify(mealsByDate));
+      localStorage.setItem("caloryx_selected_date", selectedDateKey);
+      localStorage.removeItem("caloryx_eaten");
+      localStorage.removeItem("caloryx_meals");
+    }
+
+    async function requestStateSync(action, state) {
+      const response = await fetch(`${API_BASE}/api/sync-state`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action,
+          init_data: TELEGRAM_INIT_DATA,
+          ...(state ? { state } : {})
+        })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || "Не удалось синхронизировать данные");
+      }
+      return payload;
+    }
+
+    function scheduleStateSync() {
+      if (!syncReady || !TELEGRAM_INIT_DATA) {
+        return;
+      }
+      syncPending = true;
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(() => {
+        syncStateNow();
+      }, 700);
+    }
+
+    async function syncStateNow() {
+      if (!syncReady || !TELEGRAM_INIT_DATA) {
+        return;
+      }
+      if (syncInProgress) {
+        syncPending = true;
+        return;
+      }
+      syncPending = false;
+      syncInProgress = true;
+      try {
+        await requestStateSync("save", getSyncState());
+      } catch {
+        // Local state remains available and the next change will try again.
+      } finally {
+        syncInProgress = false;
+        if (syncPending) {
+          scheduleStateSync();
+        }
+      }
+    }
+
+    async function initializeState() {
+      let hasRemoteState = false;
+      if (TELEGRAM_INIT_DATA) {
+        try {
+          const remote = await requestStateSync("load");
+          if (remote.state) {
+            applySyncState(remote.state);
+            hasRemoteState = true;
+          }
+        } catch {
+          // Opening the app still works from the local backup when offline.
+        }
+      }
+      syncReady = true;
+      if (getProfile()) {
+        showApp();
+      } else {
+        showOnboarding();
+      }
+      if (!hasRemoteState && (getProfile() || Object.keys(mealsByDate).length)) {
+        scheduleStateSync();
+      }
+    }
+
+    function saveProfile(profile) {
+      localStorage.setItem("caloryx_profile", JSON.stringify(profile));
+      scheduleStateSync();
+    }
 
     function getProfile() {
       return JSON.parse(localStorage.getItem("caloryx_profile") || "null");
@@ -3122,7 +3240,7 @@
       if (profile) {
         if (!profile.startedAt) {
           profile.startedAt = new Date().toISOString();
-          localStorage.setItem("caloryx_profile", JSON.stringify(profile));
+          saveProfile(profile);
         }
         applyProfile(profile);
       }
@@ -3135,7 +3253,7 @@
       const previousProfile = getProfile();
       profileDraft.plan = generatedPlan || calculatePlan(profileDraft);
       profileDraft.startedAt = previousProfile?.startedAt || new Date().toISOString();
-      localStorage.setItem("caloryx_profile", JSON.stringify(profileDraft));
+      saveProfile(profileDraft);
       editingProfileStep = false;
       applyProfile(profileDraft);
       showApp();
@@ -3427,6 +3545,7 @@
       localStorage.setItem("caloryx_meals_by_date", JSON.stringify(mealsByDate));
       localStorage.removeItem("caloryx_eaten");
       localStorage.removeItem("caloryx_meals");
+      scheduleStateSync();
     }
 
     function getCurrentTime() {
@@ -3652,6 +3771,7 @@
       mealsByDate = {};
       profileDraft = { ...profileDefaults };
       generatedPlan = null;
+      saveState();
       showOnboarding();
     });
 
@@ -4123,11 +4243,7 @@
       renderState();
     });
 
-    if (getProfile()) {
-      showApp();
-    } else {
-      showOnboarding();
-    }
+    initializeState();
   </script>
 </body>
 </html>
