@@ -1119,9 +1119,13 @@
     }
 
     function formatChartDate(week) {
-      const date = new Date();
+      const today = new Date();
+      const date = new Date(today);
       date.setDate(date.getDate() + Math.round(Number(week) || 0) * 7);
-      return date.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" });
+      const options = date.getFullYear() === today.getFullYear()
+        ? { day: "2-digit", month: "2-digit" }
+        : { day: "2-digit", month: "2-digit", year: "2-digit" };
+      return date.toLocaleDateString("ru-RU", options);
     }
 
     function progressChartSvg(plan = null) {
