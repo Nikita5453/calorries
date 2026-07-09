@@ -1020,7 +1020,7 @@
       diet: "none",
       speed: 0.4
     };
-    const stepKeys = ["goal", "gender", "birth", "height", "weight", "targetWeight", "activity", "speed", "motivation", "diet", "proof", "loading", "summary"];
+    const stepKeys = ["goal", "gender", "birth", "height", "weight", "targetWeight", "activity", "speed", "motivation", "diet", "loading", "proof", "summary"];
     let profileDraft = { ...profileDefaults };
     let generatedPlan = null;
     let activeStep = 0;
@@ -1200,11 +1200,25 @@
       macroTargets.carbs = plan.carbs;
     }
 
+    function getDietLabel(diet) {
+      return {
+        none: "без диеты",
+        vegetarian: "вегетарианская",
+        vegan: "веганская",
+        keto: "кето",
+        paleo: "палео"
+      }[diet] || "без диеты";
+    }
+
     async function createPersonalPlan(profile) {
+      const profileForAi = {
+        ...profile,
+        diet_label: getDietLabel(profile.diet)
+      };
       const response = await fetch(`${API_BASE}/api/create-plan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profile })
+        body: JSON.stringify({ profile: profileForAi })
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -1365,13 +1379,15 @@
       } else if (step === "proof") {
         normalizeTargetWeight();
         const words = goalWords();
+        const plan = generatedPlan || calculatePlan(profileDraft);
         const diff = Math.abs(profileDraft.weight - profileDraft.targetWeight);
+        const proofText = plan.summary || words.proofText;
         onboardBody.innerHTML = `
           <h1 class="onboard-title">${words.proofTitle} ${diff} кг — это реальная цель. С нами это будет легче!</h1>
           <div class="summary-card">
-            ${progressChartSvg()}
+            ${progressChartSvg(plan)}
           </div>
-          <p class="onboard-subtitle">${words.proofText}</p>
+          <p class="onboard-subtitle">${proofText}</p>
         `;
       } else if (step === "loading") {
         continueStep.disabled = true;
