@@ -287,7 +287,7 @@
       width: 62px;
       height: 62px;
       border-radius: 50%;
-      background: conic-gradient(var(--green) var(--progress, 0deg), #ececef 0deg);
+      background: conic-gradient(var(--macro-color, var(--green)) var(--progress, 0deg), #ececef 0deg);
       display: grid;
       place-items: center;
       color: #9fa4af;
@@ -307,7 +307,7 @@
     .macro-ring span {
       position: relative;
       z-index: 1;
-      color: #9fa4af;
+      color: var(--macro-color, #606672);
       font-size: 15px;
       font-weight: 900;
     }
@@ -319,9 +319,21 @@
     }
 
     .macro .macro-label {
-      color: #b39ca9;
+      color: #747985;
       font-size: 13px;
       font-weight: 800;
+    }
+
+    #proteinRing {
+      --macro-color: #27c6df;
+    }
+
+    #fatRing {
+      --macro-color: #f3b400;
+    }
+
+    #carbsRing {
+      --macro-color: #a767d8;
     }
 
     .section-title {
@@ -416,6 +428,16 @@
       transition: transform .24s ease;
       max-width: 420px;
       margin: 0 auto;
+      z-index: 20;
+    }
+
+    .sheet::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: #fff;
+      z-index: -1;
     }
 
     .sheet.open {
