@@ -390,13 +390,15 @@
     }
 
     .history-item {
-      display: flex;
-      justify-content: space-between;
+      position: relative;
+      display: grid;
+      grid-template-columns: 124px 1fr 24px;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       background: #fff;
-      border-radius: 12px;
-      padding: 11px 12px;
+      border-radius: 14px;
+      padding: 8px;
+      min-height: 132px;
       font-size: 13px;
       color: #555a64;
     }
@@ -407,21 +409,128 @@
 
     .history-main {
       min-width: 0;
-      flex: 1;
+      display: grid;
+      gap: 8px;
+      align-content: center;
     }
 
-    .history-kcal {
+    .meal-thumb {
+      display: grid;
+      place-items: center;
+      width: 124px;
+      height: 124px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #fff 0%, #f3f4f6 100%);
+      color: #7c858d;
+    }
+
+    .meal-thumb svg {
+      width: 86px;
+      height: 86px;
+      stroke: currentColor;
+    }
+
+    .meal-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      color: #9aa1ad;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .meal-portion {
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #f0f1f4;
+    }
+
+    .meal-time {
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #f6f7f9;
+    }
+
+    .meal-name {
+      color: #9aa1ad;
+      font-weight: 800;
+      line-height: 1.25;
+    }
+
+    .meal-calories {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: #17181b;
+      font-size: 19px;
+    }
+
+    .meal-flame,
+    .macro-pill {
+      display: inline-grid;
+      place-items: center;
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .meal-flame {
+      background: var(--green);
+      font-size: 13px;
+    }
+
+    .meal-macros {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      color: #17181b;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .macro-pill.protein {
+      background: #28c7df;
+    }
+
+    .macro-pill.fat {
+      background: #f4b400;
+    }
+
+    .macro-pill.carbs {
+      background: #b46ce4;
+    }
+
+    .macro-value {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .history-empty {
+      min-height: 48px;
+      grid-template-columns: 1fr auto;
+      padding: 11px 12px;
+    }
+
+    .history-kcal,
+    .delete-meal {
       white-space: nowrap;
     }
 
     .delete-meal {
-      width: 26px;
-      height: 26px;
+      width: 24px;
+      height: 42px;
       border: 0;
-      border-radius: 50%;
-      background: #f2f2f3;
+      border-radius: 999px;
+      background: transparent;
       color: #a3a7b0;
-      font-size: 18px;
+      font-size: 28px;
       line-height: 1;
       display: grid;
       place-items: center;
@@ -2472,6 +2581,19 @@
       }).join("");
     }
 
+    function mealIconSvg() {
+      return `
+        <svg viewBox="0 0 96 96" fill="none" aria-hidden="true">
+          <path d="M32 19c-5 6 5 8 0 15M47 14c-6 7 6 9 0 18M62 19c-5 6 5 8 0 15" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="48" cy="55" r="25" stroke-width="3"/>
+          <path d="M28 55h40M33 66c8 7 22 7 30 0" stroke-width="3" stroke-linecap="round"/>
+          <path d="M17 31v44M23 31v44M29 31v44M17 47h12" stroke-width="3" stroke-linecap="round"/>
+          <path d="M73 31c7 9 6 19-3 27l-3 3 12 14" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M20 75 75 20" stroke-width="4" stroke-linecap="round"/>
+        </svg>
+      `;
+    }
+
     function renderState() {
       const meals = getMealsForDate();
       const eaten = getEatenForDate();
@@ -2483,26 +2605,33 @@
       renderMacros();
       renderUsefulScore(meals, eaten);
       if (!meals.length) {
-        history.innerHTML = `<div class="history-item"><b>${formatSelectedDate(selectedDateKey)} пока пусто</b><span class="history-kcal">0 ккал</span></div>`;
+        history.innerHTML = `<div class="history-item history-empty"><b>${formatSelectedDate(selectedDateKey)} пока пусто</b><span class="history-kcal">0 ккал</span></div>`;
         return;
       }
       history.innerHTML = meals
-        .map((meal, index) => `
-          <div class="history-item">
+        .map((meal, index) => {
+          const macros = meal.macros || estimateMacros(Number(meal.calories) || 0);
+          const portion = meal.portionLabel || `${meal.grams || 100}г`;
+          return `
+          <article class="history-item">
+            <div class="meal-thumb">${mealIconSvg()}</div>
             <div class="history-main">
-              <b>${meal.portionLabel || `${meal.foodName}, ${meal.grams} г`}</b>
-              <div>${meal.foodName}</div>
-              <div>🔥 ${meal.calories} калорий</div>
-              <div>
-                <span>Б ${meal.macros?.protein || 0}г</span>
-                <span>Ж ${meal.macros?.fat || 0}г</span>
-                <span>У ${meal.macros?.carbs || 0}г</span>
+              <div class="meal-top">
+                <span class="meal-portion">${portion}</span>
+                <span class="meal-time">${meal.createdAt || ""}</span>
+              </div>
+              <div class="meal-name">${meal.foodName}</div>
+              <div class="meal-calories"><span class="meal-flame">🔥</span><span>${meal.calories} калорий</span></div>
+              <div class="meal-macros">
+                <span class="macro-value"><span class="macro-pill protein">Б</span>${macros.protein || 0}г</span>
+                <span class="macro-value"><span class="macro-pill fat">Ж</span>${macros.fat || 0}г</span>
+                <span class="macro-value"><span class="macro-pill carbs">У</span>${macros.carbs || 0}г</span>
               </div>
             </div>
-            <span class="history-kcal">${meal.createdAt || ""}</span>
             <button class="delete-meal" type="button" data-index="${index}" aria-label="Удалить">×</button>
-          </div>
-        `)
+          </article>
+        `;
+        })
         .join("");
     }
 
