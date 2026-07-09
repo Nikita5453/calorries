@@ -636,6 +636,44 @@
       flex: 0 0 auto;
     }
 
+    .scan-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin: 10px 0;
+    }
+
+    .scan-button {
+      height: 44px;
+      border: 0;
+      border-radius: 12px;
+      background: #2f9cff;
+      color: #fff;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .scan-preview {
+      display: grid;
+      grid-template-columns: 64px 1fr;
+      gap: 10px;
+      align-items: center;
+      padding: 8px;
+      border-radius: 12px;
+      background: #f2f6fb;
+      color: #3f4652;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .scan-preview img {
+      width: 64px;
+      height: 64px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+
     .ai-error {
       min-height: 18px;
       margin-bottom: 10px;
@@ -1105,6 +1143,15 @@
     <label class="field">
       <textarea id="foodPrompt" autocomplete="off" placeholder="Опишите блюдо"></textarea>
     </label>
+    <div class="scan-row">
+      <button class="scan-button" id="scanPhoto" type="button">📷 Скан камерой</button>
+      <span>или текстом</span>
+    </div>
+    <input class="hidden" id="foodPhoto" type="file" accept="image/*" capture="environment">
+    <div class="scan-preview hidden" id="scanPreview">
+      <img id="scanPreviewImage" alt="Фото блюда">
+      <span id="scanPreviewText">Фото готово к анализу</span>
+    </div>
     <div class="ai-hint"><strong>!</strong><span>Расскажите ИИ, что в блюде, как оно приготовлено и какой размер порции.</span></div>
     <div class="ai-error" id="aiError"></div>
     <div class="sheet-actions">
@@ -1171,6 +1218,11 @@
     const cancelReset = document.querySelector("#cancelReset");
     const confirmReset = document.querySelector("#confirmReset");
     const foodPrompt = document.querySelector("#foodPrompt");
+    const scanPhoto = document.querySelector("#scanPhoto");
+    const foodPhoto = document.querySelector("#foodPhoto");
+    const scanPreview = document.querySelector("#scanPreview");
+    const scanPreviewImage = document.querySelector("#scanPreviewImage");
+    const scanPreviewText = document.querySelector("#scanPreviewText");
     const aiError = document.querySelector("#aiError");
     const sendMeal = document.querySelector("#sendMeal");
     const history = document.querySelector("#history");
@@ -1223,6 +1275,7 @@
     let activeStep = 0;
     let target = 2188;
     let calendarExpanded = false;
+    let selectedPhotoDataUrl = "";
 
     function toDateKey(date = new Date()) {
       const year = date.getFullYear();
@@ -2066,6 +2119,65 @@
       return payload;
     }
 
+    async function analyzeFoodPhoto(imageDataUrl, note = "") {
+      const response = await fetch(`${API_BASE}/api/analyze-photo`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image_data_url: imageDataUrl, note })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || "ИИ не смог обработать фото");
+      }
+      return payload;
+    }
+
+    function compressImage(file, maxSize = 1100, quality = 0.78) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("Не получилось прочитать фото"));
+        reader.onload = () => {
+          const image = new Image();
+          image.onerror = () => reject(new Error("Не получилось открыть фото"));
+          image.onload = () => {
+            const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(image.width * scale));
+            canvas.height = Math.max(1, Math.round(image.height * scale));
+            const context = canvas.getContext("2d");
+            context.drawImage(image, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL("image/jpeg", quality));
+          };
+          image.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function addMealFromAnalysis(analysis, fallbackName) {
+      const calories = Number(analysis.calories) || 1;
+      const grams = Number(analysis.grams) || 100;
+      const meal = {
+        foodName: analysis.food_name || fallbackName,
+        portionLabel: analysis.portion_label || `${grams}г`,
+        grams,
+        calories,
+        usefulness: Number(analysis.usefulness) || 0,
+        macros: {
+          protein: Number(analysis.protein) || 0,
+          fat: Number(analysis.fat) || 0,
+          carbs: Number(analysis.carbs) || 0
+        },
+        dateKey: selectedDateKey,
+        createdAt: getCurrentTime()
+      };
+      const dayMeals = [...getMealsForDate()];
+      dayMeals.unshift(meal);
+      setMealsForDate(selectedDateKey, dayMeals);
+      saveState();
+      renderState();
+    }
+
     tg?.ready();
     tg?.expand();
     tg?.setHeaderColor("#f2f2f3");
@@ -2179,44 +2291,62 @@
       sheet.classList.remove("open");
     });
 
+    scanPhoto.addEventListener("click", () => {
+      foodPhoto.click();
+    });
+
+    foodPhoto.addEventListener("change", async () => {
+      const file = foodPhoto.files?.[0];
+      if (!file) {
+        return;
+      }
+      if (!file.type.startsWith("image/")) {
+        aiError.textContent = "Выберите фото блюда.";
+        return;
+      }
+      aiError.textContent = "";
+      scanPhoto.disabled = true;
+      scanPhoto.textContent = "Готовлю фото...";
+      try {
+        selectedPhotoDataUrl = await compressImage(file);
+        scanPreviewImage.src = selectedPhotoDataUrl;
+        scanPreviewText.textContent = "Фото готово. Можно добавить или дописать уточнение.";
+        scanPreview.classList.remove("hidden");
+      } catch (error) {
+        selectedPhotoDataUrl = "";
+        scanPreview.classList.add("hidden");
+        aiError.textContent = error.message;
+      } finally {
+        scanPhoto.disabled = false;
+        scanPhoto.textContent = "📷 Скан камерой";
+      }
+    });
+
     sendMeal.addEventListener("click", async () => {
       const description = foodPrompt.value.trim();
-      if (description.length < 3) {
+      if (!selectedPhotoDataUrl && description.length < 3) {
         aiError.textContent = "Опишите блюдо чуть подробнее.";
         return;
       }
       aiError.textContent = "";
       sendMeal.disabled = true;
-      sendMeal.textContent = "ИИ считает...";
+      scanPhoto.disabled = true;
+      sendMeal.textContent = selectedPhotoDataUrl ? "ИИ смотрит фото..." : "ИИ считает...";
       try {
-        const analysis = await analyzeFoodDescription(description);
-        const calories = Number(analysis.calories) || 1;
-        const grams = Number(analysis.grams) || 100;
-        const meal = {
-          foodName: analysis.food_name || description,
-          portionLabel: analysis.portion_label || `${grams}г`,
-          grams,
-          calories,
-          usefulness: Number(analysis.usefulness) || 0,
-          macros: {
-            protein: Number(analysis.protein) || 0,
-            fat: Number(analysis.fat) || 0,
-            carbs: Number(analysis.carbs) || 0
-          },
-          dateKey: selectedDateKey,
-          createdAt: getCurrentTime()
-        };
-        const dayMeals = [...getMealsForDate()];
-        dayMeals.unshift(meal);
-        setMealsForDate(selectedDateKey, dayMeals);
-        saveState();
-        renderState();
+        const analysis = selectedPhotoDataUrl
+          ? await analyzeFoodPhoto(selectedPhotoDataUrl, description)
+          : await analyzeFoodDescription(description);
+        addMealFromAnalysis(analysis, description || "Скан продукта");
         foodPrompt.value = "";
+        foodPhoto.value = "";
+        selectedPhotoDataUrl = "";
+        scanPreview.classList.add("hidden");
         sheet.classList.remove("open");
       } catch (error) {
         aiError.textContent = error.message;
       } finally {
         sendMeal.disabled = false;
+        scanPhoto.disabled = false;
         sendMeal.textContent = "Добавить";
       }
     });
