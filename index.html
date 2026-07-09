@@ -431,6 +431,14 @@
       stroke: currentColor;
     }
 
+    .meal-thumb img {
+      width: 100%;
+      height: 100%;
+      border-radius: inherit;
+      object-fit: cover;
+      display: block;
+    }
+
     .meal-top {
       display: flex;
       justify-content: space-between;
@@ -3422,6 +3430,14 @@
       `;
     }
 
+    function mealThumbnailHtml(meal) {
+      const imageUrl = String(meal.imageUrl || "");
+      if (/^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(imageUrl)) {
+        return `<img src="${imageUrl}" alt="">`;
+      }
+      return mealIconSvg();
+    }
+
     function escapeHtml(value) {
       return String(value ?? "").replace(/[&<>"']/g, (character) => ({
         "&": "&amp;",
@@ -3519,13 +3535,13 @@
           const portion = meal.portionLabel || `${meal.grams || 100}г`;
           return `
           <article class="history-item" data-meal-index="${index}" role="button" tabindex="0">
-            <div class="meal-thumb">${mealIconSvg()}</div>
+            <div class="meal-thumb">${mealThumbnailHtml(meal)}</div>
             <div class="history-main">
               <div class="meal-top">
                 <span class="meal-portion">${portion}</span>
                 <span class="meal-time">${meal.createdAt || ""}</span>
               </div>
-              <div class="meal-name">${meal.foodName}</div>
+              <div class="meal-name">${escapeHtml(meal.foodName)}</div>
               <div class="meal-calories"><span class="meal-flame">🔥</span><span>${meal.calories} калорий</span></div>
               <div class="meal-macros">
                 <span class="macro-value"><span class="macro-pill protein">Б</span>${macros.protein || 0}г</span>
@@ -3578,6 +3594,19 @@
       return payload;
     }
 
+    async function generateFoodImage(description) {
+      const response = await fetch(`${API_BASE}/api/generate-food-image`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.image_data_url) {
+        throw new Error(payload.error || "ИИ не смог создать картинку блюда");
+      }
+      return payload.image_data_url;
+    }
+
     function compressImage(file, maxSize = 1100, quality = 0.78) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -3600,7 +3629,24 @@
       });
     }
 
-    function buildMealFromAnalysis(analysis, fallbackName, oldMeal = {}) {
+    function createMealThumbnail(imageDataUrl, maxSize = 360, quality = 0.72) {
+      return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onerror = () => reject(new Error("Не получилось подготовить картинку блюда"));
+        image.onload = () => {
+          const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, Math.round(image.width * scale));
+          canvas.height = Math.max(1, Math.round(image.height * scale));
+          const context = canvas.getContext("2d");
+          context.drawImage(image, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        };
+        image.src = imageDataUrl;
+      });
+    }
+
+    function buildMealFromAnalysis(analysis, fallbackName, oldMeal = {}, imageUrl = "") {
       const calories = Number(analysis.calories) || 1;
       const grams = Number(analysis.grams) || 100;
       const foodName = analysis.food_name || fallbackName;
@@ -3611,6 +3657,7 @@
         calories,
         usefulness: Number(analysis.usefulness) || 0,
         recommendation: analysis.recommendation || "",
+        imageUrl: imageUrl || oldMeal.imageUrl || "",
         macros: {
           protein: Number(analysis.protein) || 0,
           fat: Number(analysis.fat) || 0,
@@ -3631,8 +3678,8 @@
       };
     }
 
-    function addMealFromAnalysis(analysis, fallbackName) {
-      const meal = buildMealFromAnalysis(analysis, fallbackName);
+    function addMealFromAnalysis(analysis, fallbackName, imageUrl = "") {
+      const meal = buildMealFromAnalysis(analysis, fallbackName, {}, imageUrl);
       const dayMeals = [...getMealsForDate()];
       dayMeals.unshift(meal);
       setMealsForDate(selectedDateKey, dayMeals);
@@ -3900,10 +3947,23 @@
       pickGallery.disabled = true;
       sendMeal.textContent = selectedPhotoDataUrl ? "ИИ смотрит фото..." : "ИИ считает...";
       try {
-        const analysis = selectedPhotoDataUrl
-          ? await analyzeFoodPhoto(selectedPhotoDataUrl, description)
+        const sourcePhoto = selectedPhotoDataUrl;
+        const analysis = sourcePhoto
+          ? await analyzeFoodPhoto(sourcePhoto, description)
           : await analyzeFoodDescription(description);
-        addMealFromAnalysis(analysis, description || "Скан продукта");
+        let mealImageUrl = "";
+        try {
+          if (sourcePhoto) {
+            mealImageUrl = await createMealThumbnail(sourcePhoto);
+          } else {
+            sendMeal.textContent = "ИИ рисует блюдо...";
+            const generatedImage = await generateFoodImage(analysis.food_name || description);
+            mealImageUrl = await createMealThumbnail(generatedImage);
+          }
+        } catch {
+          // The meal is still saved when the optional image generation fails.
+        }
+        addMealFromAnalysis(analysis, description || "Скан продукта", mealImageUrl);
         foodPrompt.value = "";
         cameraPhoto.value = "";
         galleryPhoto.value = "";
