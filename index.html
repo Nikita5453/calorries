@@ -450,6 +450,53 @@
       font-size: 19px;
     }
 
+    .profile-stats {
+      display: grid;
+      gap: 12px;
+      margin: 18px 0;
+    }
+
+    .profile-stat {
+      background: #f4f4f4;
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .profile-stat span {
+      display: block;
+      color: #747985;
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 5px;
+    }
+
+    .profile-stat strong {
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .danger-zone {
+      margin-top: 24px;
+      padding: 14px;
+      border-radius: 14px;
+      background: #fff1f3;
+      color: #b92d42;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .danger-button {
+      width: 100%;
+      height: 48px;
+      margin-top: 12px;
+      border: 0;
+      border-radius: 12px;
+      background: #d63c50;
+      color: #fff;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
     .field {
       display: grid;
       gap: 6px;
@@ -989,6 +1036,31 @@
     </div>
   </section>
 
+  <section class="sheet" id="profileSheet" aria-label="Профиль">
+    <h2>Профиль</h2>
+    <div class="profile-stats">
+      <div class="profile-stat">
+        <span>Режим идет</span>
+        <strong id="profileDays">0 дней</strong>
+      </div>
+      <div class="profile-stat">
+        <span>Дата старта</span>
+        <strong id="profileStart">-</strong>
+      </div>
+      <div class="profile-stat">
+        <span>Цель</span>
+        <strong id="profileGoal">-</strong>
+      </div>
+    </div>
+    <div class="danger-zone">
+      Сброс режима удалит текущий профиль, историю еды и счетчик дней. После подтверждения откроется первоначальный выбор.
+      <button class="danger-button" id="resetPlan" type="button">Сбросить режим</button>
+    </div>
+    <div class="sheet-actions">
+      <button class="ghost" id="closeProfile" type="button">Закрыть</button>
+    </div>
+  </section>
+
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     const tg = window.Telegram?.WebApp;
@@ -1000,6 +1072,12 @@
     const backStep = document.querySelector("#backStep");
     const profileButton = document.querySelector(".profile");
     const sheet = document.querySelector("#sheet");
+    const profileSheet = document.querySelector("#profileSheet");
+    const profileDays = document.querySelector("#profileDays");
+    const profileStart = document.querySelector("#profileStart");
+    const profileGoal = document.querySelector("#profileGoal");
+    const closeProfile = document.querySelector("#closeProfile");
+    const resetPlan = document.querySelector("#resetPlan");
     const foodPrompt = document.querySelector("#foodPrompt");
     const aiError = document.querySelector("#aiError");
     const sendMeal = document.querySelector("#sendMeal");
@@ -1053,6 +1131,43 @@
 
     function getProfile() {
       return JSON.parse(localStorage.getItem("caloryx_profile") || "null");
+    }
+
+    function formatDateOnly(value) {
+      if (!value) {
+        return "-";
+      }
+      return new Date(value).toLocaleDateString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+      });
+    }
+
+    function getRegimeDays(profile) {
+      if (!profile?.startedAt) {
+        return 0;
+      }
+      const start = new Date(profile.startedAt);
+      const today = new Date();
+      start.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+      return Math.max(1, Math.floor((today - start) / 86400000) + 1);
+    }
+
+    function goalName(goal) {
+      return {
+        loss: "Похудеть",
+        maintain: "Удержать вес",
+        gain: "Набрать вес"
+      }[goal] || "-";
+    }
+
+    function renderProfileSheet() {
+      const profile = getProfile();
+      profileDays.textContent = `${getRegimeDays(profile)} дней`;
+      profileStart.textContent = formatDateOnly(profile?.startedAt);
+      profileGoal.textContent = goalName(profile?.goal);
     }
 
     function getAge(profile) {
@@ -1602,6 +1717,7 @@
       activeStep = 0;
       appRoot.classList.add("hidden");
       sheet.classList.remove("open");
+      profileSheet.classList.remove("open");
       onboarding.classList.remove("hidden");
       renderOnboarding();
     }
@@ -1609,6 +1725,10 @@
     function showApp() {
       const profile = getProfile();
       if (profile) {
+        if (!profile.startedAt) {
+          profile.startedAt = new Date().toISOString();
+          localStorage.setItem("caloryx_profile", JSON.stringify(profile));
+        }
         applyProfile(profile);
       }
       onboarding.classList.add("hidden");
@@ -1618,6 +1738,7 @@
 
     function completeOnboarding() {
       profileDraft.plan = generatedPlan || calculatePlan(profileDraft);
+      profileDraft.startedAt = new Date().toISOString();
       localStorage.setItem("caloryx_profile", JSON.stringify(profileDraft));
       applyProfile(profileDraft);
       showApp();
@@ -1806,7 +1927,29 @@
     });
 
     profileButton.addEventListener("click", () => {
-      showOnboarding(true);
+      renderProfileSheet();
+      profileSheet.classList.add("open");
+    });
+
+    closeProfile.addEventListener("click", () => {
+      profileSheet.classList.remove("open");
+    });
+
+    resetPlan.addEventListener("click", () => {
+      const confirmed = window.confirm(
+        "Сбросить текущий режим? Профиль, история еды и счетчик дней будут удалены. После этого начнется первоначальный выбор."
+      );
+      if (!confirmed) {
+        return;
+      }
+      localStorage.removeItem("caloryx_profile");
+      localStorage.removeItem("caloryx_eaten");
+      localStorage.removeItem("caloryx_meals");
+      eaten = 0;
+      meals = [];
+      profileDraft = { ...profileDefaults };
+      generatedPlan = null;
+      showOnboarding();
     });
 
     document.querySelector("#openSheet").addEventListener("click", () => {
